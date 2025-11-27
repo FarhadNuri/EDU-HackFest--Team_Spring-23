@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema({
         type:String,
         required: true,
         unique:true
+    },
+    language: {
+        type:String,
+        enum:["en","ban"],
+        default:"en",
     }
 },{timestamps: true})
 
