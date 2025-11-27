@@ -16,8 +16,14 @@ const userSchema = new mongoose.Schema({
         required:true
     },
     mobile: {
-        type:Number,
-        required: true
+        type:String,
+        required: true,
+        unique:true
+    },
+    language: {
+        type:String,
+        enum:["en","ban"],
+        default:"en",
     }
 },{timestamps: true})
 
