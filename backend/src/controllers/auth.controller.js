@@ -14,7 +14,7 @@ export async function signUp(req,res) {
             return res.status(400).json({success:false, message:"Password length should be atleast 6"})
         }
 
-        if(mobile.length<=11) {
+        if(mobile.length<11) {
             return res.status(400).json({success:false, message:"Enter valid mobile number"})
         }
 
@@ -31,24 +31,26 @@ export async function signUp(req,res) {
         const hashedPassword = await bcrypt.hash(password,salt)
 
         const newUser = new User({
-            fullname:fullname,
-            email:email,
-            password:hashedPassword
+            fullname: fullname,
+            email: email,
+            mobile: mobile,
+            password: hashedPassword
         })
 
         if(newUser) {
             await newUser.save()
-            res.status(201).json({
+            res.status(201).json({user: {
                 _id:newUser._id,
                 fullname:newUser.fullname,
                 email:newUser.email
+            },message:"User created successfully"
             })
         } else {
-            res.status(400).json({success:false, message: "Invalid credentials"})
+            return res.status(400).json({success:false, message: "Invalid credentials"})
         }
 
     } catch (error) {
-        res.status(500).json({success:false,messag: "internal server error"})
+        res.status(500).json({success:false,message: "internal server error"})
     }
 }
 
@@ -72,12 +74,11 @@ export async function logIn(req,res) {
             return res.status(400).json({success:false,message:"Invalid credentials"})
         }
 
-        res.status(200).json({
+        res.status(200).json({user: {
             _id: currUser._id,
             fullname:currUser.fullname,
             email: currUser.email,
-            profilePic: currUser.profilePic,
-            message: "login successfull"
+        },message: "login successfull"
         })
 
     } catch (error) {
