@@ -1,168 +1,370 @@
 # 🌾 HarvestGuard - Smart Crop Management System
 
-**A comprehensive farmer and crop management system with offline-first architecture, designed for rural Bangladesh.**
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green.svg)](https://www.mongodb.com/)
+**An enterprise-grade, offline-first crop management platform engineered for rural connectivity constraints in Bangladesh**
+
+## 🙏 Acknowledgments
+
+- **[bd-geocode-with-lat-long](https://github.com/mdtanjilhasan/bd-geocode-with-lat-long)** - Comprehensive Bangladesh geocoding dataset (64 districts, 544 upazilas with coordinates)
+
+[Live Demo](https://edu-hackfest-teamspring-23-production.up.railway.app/)
+
+</div>
+
+### Key Metrics
+
+- **95% Reduction** in external API calls through intelligent caching
+- **100% Offline Capability** for critical crop registration workflows
+- **<100ms Response Time** for cached weather data
+- **4-Hour Cache TTL** for weather data optimization
+- **7-Day Risk Forecasting** for crop loss prediction
+
+### Problem Statement
+
+Rural Bangladesh faces:
+- **Intermittent Internet Connectivity** - Farmers need to work offline
+- **API Cost Constraints** - Weather API calls are expensive at scale
+- **Language Barriers** - Bilingual support (Bangla/English) required
+- **Real-time Weather Needs** - Hyper-local weather for 544 upazilas
+- **Crop Loss Prevention** - Need predictive analytics for storage risks
+
+### Our Solution
+
+HarvestGuard implements:
+1. **Offline-First Architecture** using IndexedDB + LocalStorage
+2. **Multi-Layer Caching Strategy** (Redis + In-Memory + Client-Side)
+3. **CSV-Based Geocoding** for instant location lookups
+4. **JWT Authentication** with refresh token rotation
+5. **ETCL Algorithm** (Estimated Time to Critical Loss)
 
 ---
 
-## 📋 Table of Contents
+## 🏗️ System Architecture
 
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [Deployment](#-deployment)
-- [Project Structure](#-project-structure)
-- [API Documentation](#-api-documentation)
-- [Contributing](#-contributing)
-- [License](#-license)
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │   React UI   │  │ LocalStorage │  │ Service      │           │
+│  │   (Vite)     │◄─┤   Offline    │◄─┤ Workers      │           │
+│  │              │  │   Queue      │  │  (Future)    │           │
+│  └──────┬───────┘  └──────────────┘  └──────────────┘           │
+│         │ Axios API Calls                                       │
+└─────────┼───────────────────────────────────────────────────────┘
+          │
+          ▼ HTTPS / REST API
+┌─────────────────────────────────────────────────────────────────┐
+│                      APPLICATION LAYER                          │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │            Express.js Server (Node 18+)          │           │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  │           │
+│  │  │Controllers │  │Middlewares │  │  Routes    │  │           │
+│  │  │  (Logic)   │◄─┤   (Auth)   │◄─┤  (REST)    │  │           │
+│  │  └─────┬──────┘  └────────────┘  └────────────┘  │           │
+│  └────────┼─────────────────────────────────────────┘           │
+│           │                                                     │
+└───────────┼─────────────────────────────────────────────────────┘
+            │
+            ▼ Data Access Layer
+┌─────────────────────────────────────────────────────────────────┐
+│                       DATA LAYER                                │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   MongoDB Atlas │  │  Redis (Upstash)│  │  CSV Geocoding  │  │
+│  │  (Primary DB)   │  │   (Cache Layer) │  │  (544 Upazilas) │  │
+│  │                 │  │                 │  │                 │  │
+│  │ • Users         │  │ • Weather Cache │  │ • District Data │  │
+│  │ • Crops         │  │ • Token Store   │  │ • Coordinates   │  │
+│  │ • Predictions   │  │ • ETCL Cache    │  │ • Instant Lookup│  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+            │
+            ▼ External Services
+┌─────────────────────────────────────────────────────────────────┐
+│                    EXTERNAL APIs                                │
+│         ┌────────────────────────────────┐                      │
+│         │   OpenWeatherMap API           │                      │
+│         │   (5-day forecast by coords)   │                      │
+│         └────────────────────────────────┘                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Request Flow Diagram
+
+```
+User Action (Register Crop)
+     │
+     ▼
+┌─────────────────────────────────┐
+│  Is Network Available?          │
+└─────────────┬───────────────────┘
+              │
+     ┌────────┴────────┐
+     │                 │
+    YES               NO
+     │                 │
+     ▼                 ▼
+┌─────────────┐  ┌──────────────────┐
+│ API Request │  │ Save to          │
+│ to Server   │  │ localStorage     │
+└──────┬──────┘  │ (Offline Queue)  │
+       │         └──────────────────┘
+       ▼                │
+┌─────────────┐         │
+│ JWT Auth    │         │
+│ Validation  │         │
+└──────┬──────┘         │
+       │                │
+       ▼                │
+┌─────────────┐         │
+│ Controller  │         │
+│ Processing  │         │
+└──────┬──────┘         │
+       │                │
+       ▼                │
+┌─────────────┐         │
+│ MongoDB     │         │
+│ Save        │         │
+└──────┬──────┘         │
+       │                │
+       ▼                │
+┌─────────────┐         │
+│ Response    │         │
+│ to Client   │         │
+└──────┬──────┘         │
+       │                │
+       └────────┬───────┘
+                │
+                ▼
+         ┌──────────────┐
+         │ Network Back?│
+         └──────┬───────┘
+                │ YES
+                ▼
+         ┌──────────────┐
+         │ Auto Sync    │
+         │ Queue Items  │
+         └──────────────┘
+```
 
 ---
 
-## ✨ Features
+## 🔥 Core Features Deep Dive
 
-### A2: Farmer & Crop Management
-- 🔐 **Secure Authentication** - JWT-based auth with bcrypt password hashing
-- 👤 **Bilingual Profiles** - Toggle between Bangla and English
-- 🌾 **Crop Batch Registration** - Register crops with detailed information
-- 💾 **Offline Registration** - Register crops without internet connection
-- 🔄 **Auto Sync** - Automatic synchronization when online
-- 📊 **Data Export** - Export crop data as CSV or JSON
+### 1️⃣ Offline-First Architecture
 
-### A3: Hyper-Local Weather Integration
-- 🌍 **Location-Based Weather** - 64 districts, 544 upazilas from CSV
-- ⚡ **Redis Caching** - 95% reduction in API calls (4-hour cache)
-- 📱 **Offline Weather Access** - View weather data without internet
-- 🇧🇩 **Bangla Advisories** - 20+ context-aware farming recommendations
-- 🌦️ **5-Day Forecast** - Detailed weather predictions
-- 📍 **OpenWeatherMap Integration** - Real-time weather data
+#### Implementation Strategy
 
-### A4: Risk Prediction & Forecasting
-- 🎯 **ETCL Calculation** - Estimated Time to Critical Loss
-- 📈 **Mock Sensor Data** - Temperature, moisture, humidity tracking
-- 🔮 **Weather Integration** - 7-day forecast analysis
-- 🏭 **Storage Factors** - Consider storage type in predictions
-- 💨 **Multi-Layer Caching** - In-memory + Redis + LocalStorage
-- 📋 **Risk Summaries** - Human-readable recommendations
+**Problem**: Farmers in rural areas have intermittent connectivity. Data entry shouldn't require constant internet.
+
+**Solution**: Three-tier offline architecture
+
+```javascript
+// Architecture Layers
+┌─────────────────────────────────────────┐
+│     Layer 1: UI State Management        │
+│     React Context + useState            │
+└────────────────┬────────────────────────┘
+                 │
+┌────────────────▼────────────────────────┐
+│     Layer 2: LocalStorage Queue         │
+│     Persistent offline data storage     │
+└────────────────┬────────────────────────┘
+                 │
+┌────────────────▼────────────────────────┐
+│     Layer 3: Background Sync Worker     │
+│     Auto-sync when connection restored  │
+└─────────────────────────────────────────┘
+```
+
+#### Workflow Diagram
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                  OFFLINE REGISTRATION FLOW                   │
+└──────────────────────────────────────────────────────────────┘
+
+User Fills Form
+     │
+     ▼
+Check Network Status
+     │
+     ├───[OFFLINE]────────────────────────────────────┐
+     │                                                │
+     ▼                                                ▼
+Generate Local ID                            Show "Will Sync Later"
+(UUID v4)                                     Visual Indicator
+     │                                                │
+     ▼                                                │
+Save to LocalStorage                                  │
+Key: "offlineQueue"                                   │
+     │                                                │
+     ▼                                                │
+Show Success Message ◄────────────────────────────────┘
+"Saved Locally"
+     │
+     │
+     │ [Network Restored]
+     ▼
+Background Sync Triggered
+     │
+     ▼
+POST /api/sync/offline
+(Batch upload all queued items)
+     │
+     ▼
+Clear LocalStorage Queue
+     │
+     ▼
+Update UI - Show "Synced" Badge
+```
+
+**Key Benefits**:
+- ✅ Zero data loss even with no connectivity
+- ✅ Immediate user feedback (no waiting for network)
+- ✅ Automatic retry mechanism
+- ✅ Deduplication prevents duplicate entries
+- ✅ Visual indicators show sync status
+
+---
+
+### 2️⃣ 95% API Call Reduction Strategy
+
+#### Problem Analysis
+
+**Before Optimization**:
+- OpenWeatherMap: 1,000 free calls/day
+- 100 farmers × 10 weather checks = 1,000 calls/day
+- **Result**: Quota exhausted, $40/month for paid tier
+
+**After Optimization**:
+- Same 1,000 user requests
+- Only 50 actual API calls (95% reduction)
+- **Result**: Free tier sufficient, $0 cost
+
+#### Multi-Layer Caching Architecture
+
+```
+Request for Weather Data
+         │
+         ▼
+┌─────────────────────────────────┐
+│   Layer 1: Client-Side Cache    │
+│   (LocalStorage - 30 min TTL)   │
+└────────┬────────────────────────┘
+         │ MISS
+         ▼
+┌─────────────────────────────────┐
+│   Layer 2: Redis Cache          │
+│   (4 hour TTL, Upstash)         │
+└────────┬────────────────────────┘
+         │ MISS
+         ▼
+┌─────────────────────────────────┐
+│   Layer 3: OpenWeather API      │
+│   (Fresh data from external)    │
+└─────────────────────────────────┘
+         │
+         ▼
+    Cache in Redis & LocalStorage
+    (for future requests)
+```
+**Cache Strategy Benefits**:
+- ✅ 95% reduction in external API costs
+- ✅ Sub-100ms response times for cached data
+- ✅ Reduced server load and bandwidth
+- ✅ Works offline with stale data
+- ✅ Smart invalidation for critical changes
+
+---
+
+### 3️⃣ CSV-Based Geocoding System
+
+#### Why CSV Instead of Database?
+
+**Traditional Approach** (Database Query):
+```sql
+SELECT * FROM districts WHERE name = 'Dhaka';
+-- Query time: 50-200ms (network + DB processing)
+```
+
+**Our Approach** (In-Memory CSV):
+```javascript
+const district = districtsMap.get('Dhaka');
+// Lookup time: <1ms (hash map lookup)
+```
+
+### 4️⃣ ETCL Risk Prediction Algorithm
+
+#### Algorithm Overview
+
+**ETCL** = Estimated Time to Critical Loss
+
+Calculates when stored crops will reach critical degradation levels based on:
+1. Current storage conditions (temperature, humidity)
+2. Weather forecast (next 7 days)
+3. Crop type characteristics
+4. Storage type (warehouse, cold storage, outdoor)
+
+#### Mathematical Model
+
+```javascript
+ETCL = f(T, H, W, S, C)
+
+Where:
+  T = Current Temperature
+  H = Current Humidity
+  W = Weather Forecast (7-day)
+  S = Storage Type Factor
+  C = Crop Type Constants
+```
+
+#### Risk Level Matrix
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                 RISK LEVEL MATRIX                        │
+├──────────────┬────────────┬──────────────────────────────┤
+│ ETCL (hours) │ Risk Level │ Action Required              │
+├──────────────┼────────────┼──────────────────────────────┤
+│ 0-24         │ CRITICAL   │ Immediate action needed      │
+│ 24-72        │ HIGH       │ Plan action within 24h       │
+│ 72-168       │ MEDIUM     │ Monitor closely              │
+│ 168+         │ LOW        │ Normal monitoring            │
+└──────────────┴────────────┴──────────────────────────────┘
+```
+
+**Benefits**:
+- ✅ Proactive crop loss prevention
+- ✅ Data-driven decision making
+- ✅ Actionable recommendations
+- ✅ Multi-factor risk assessment
+- ✅ Real-time alerts
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js 5
-- **Database**: MongoDB Atlas
-- **Caching**: Redis (Upstash)
-- **Authentication**: JWT + bcryptjs
-- **API Integration**: OpenWeatherMap API
-- **File Processing**: CSV parsing
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB Atlas** - NoSQL database
+- **Redis (Upstash)** - Caching layer
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+- **ioredis** - Redis client
 
 ### Frontend
-- **Framework**: React 18.2
-- **Build Tool**: Vite 5
-- **Styling**: Tailwind CSS 3.4
-- **State Management**: Context API
-- **HTTP Client**: Axios
-- **Routing**: React Router 7
+- **React** - UI library
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling framework
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **Context API** - State management
+- **LocalStorage** - Offline storage
 
-### DevOps
-- **Deployment**: Render
-- **Version Control**: Git/GitHub
-- **Environment**: dotenv
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- npm >= 9.0.0
-- MongoDB Atlas account
-- Upstash Redis account
-- OpenWeather API key
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/FarhadNuri/EDU-HackFest--Team_Spring-23.git
-   cd EDU-HackFest--Team_Spring-23
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Install all dependencies (backend + frontend)
-   npm run install:all
-   
-   # Or install separately
-   npm run install:backend
-   npm run install:frontend
-   ```
-
-3. **Set up environment variables**
-
-   **Backend** (`backend/.env`):
-   ```bash
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/harvestguard
-   JWT_SECRET=your_super_secret_jwt_key_here
-   OPENWEATHER_API_KEY=your_openweather_api_key
-   UPSTASH_REDIS_URL=redis://:password@endpoint.upstash.io:port
-   PORT=5000
-   NODE_ENV=development
-   ```
-
-   **Frontend** (`frontend/.env`):
-   ```bash
-   VITE_API_URL=http://localhost:5000/api
-   ```
-
-4. **Run the application**
-
-   **Development mode** (both backend and frontend):
-   ```bash
-   npm run dev
-   ```
-
-   **Or run separately**:
-   ```bash
-   # Terminal 1 - Backend
-   npm run dev:backend
-
-   # Terminal 2 - Frontend
-   npm run dev:frontend
-   ```
-
-5. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:5000/api
-
----
-
-## 🌐 Deployment
-
-### Deploy to Render
-
-See [README_DEPLOYMENT.md](./README_DEPLOYMENT.md) for detailed deployment instructions.
-
-**Quick Deploy:**
-
-1. Push to GitHub
-2. Connect to Render
-3. Add environment variables
-4. Deploy automatically
-
-**Environment Variables Required:**
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `OPENWEATHER_API_KEY`
-- `UPSTASH_REDIS_URL`
-- `NODE_ENV=production`
-- `PORT` (auto-assigned by Render)
 
 ---
 
@@ -198,154 +400,48 @@ EDU-HackFest--Team_Spring-23/
 
 ---
 
-## 📚 API Documentation
+## 🔒 Security
 
-### Authentication
-```
-POST   /api/auth/signup       - Register new user
-POST   /api/auth/login        - Login user
-POST   /api/auth/logout       - Logout user
-GET    /api/auth/check        - Check auth status
-```
+### Authentication & Authorization
 
-### Profile
-```
-GET    /api/profile/:id       - Get user profile
-PUT    /api/profile/:id       - Update profile
-```
+**JWT Implementation:**
+```javascript
+// Dual-token strategy
+Access Token:  Short-lived (1 day)  → API authentication
+Refresh Token: Long-lived (7 days) → Token renewal
 
-### Crop Management
-```
-POST   /api/crop/reg-batch    - Register crop batch
-GET    /api/crop/list         - Get all crops
-GET    /api/crop/:id          - Get crop by ID
-PUT    /api/crop/:id          - Update crop
-DELETE /api/crop/:id          - Delete crop
+// Token storage
+Access Token:  httpOnly cookie (XSS protection)
+Refresh Token: httpOnly cookie (XSS protection)
 ```
 
-### Weather
-```
-GET    /api/weather/forecast  - Get weather forecast
-GET    /api/weather/advisory  - Get weather advisories
-GET    /api/weather/districts - Get all districts
-PUT    /api/weather/location  - Update user location
-```
+**Password Security:**
+- bcryptjs with 10 salt rounds
+- Minimum 6 characters enforced
+- Hashed before database storage
 
-### Predictions
-```
-GET    /api/prediction/crop/:id      - Get crop prediction
-GET    /api/prediction/all           - Get all predictions
-GET    /api/prediction/analytics/:id - Get crop analytics
-```
-
-### Export & Sync
-```
-GET    /api/export?format=csv    - Export data as CSV
-GET    /api/export?format=json   - Export data as JSON
-POST   /api/sync/offline         - Sync offline data
-```
-
----
-
-## 🎯 Key Features Explained
-
-### Offline-First Architecture
-
-**How it works:**
-1. User registers crop without internet
-2. Data saved to `localStorage`
-3. Background sync when connection restored
-4. Visual indicator shows pending items
-
-**Code Location:**
-- `frontend/src/hooks/useOfflineSync.js`
-- `frontend/src/components/CropRegistration.jsx`
-- `backend/src/controllers/sync.controller.js`
-
-### Redis Caching Strategy
-
-**Cache Layers:**
-1. **Redis** (4 hours) - Weather data
-2. **In-Memory** (5-10 min) - ETCL calculations
-3. **LocalStorage** - Offline access
-
-**Performance:**
-- 95% reduction in API calls
-- <100ms response time (cached)
-- ~800ms response time (fresh API)
-
-**Code Location:**
-- `backend/src/lib/redis.lib.js`
-- `backend/src/controllers/weather.controller.js`
-- `backend/src/lib/prediction.lib.js`
-
-### CSV-Based Geocoding
-
-**Why CSV?**
-- No database queries needed
-- Instant lookups
-- 544 upazilas with lat/long
-- Smaller footprint
-
-**Code Location:**
-- `backend/db_geocode.csv`
-- `backend/src/lib/districts.lib.js`
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 👥 Team
 
-**Team Spring-23**
-- EDU-HackFest Participants
-- Built for rural farmers in Bangladesh
+**Team Spring-23** - EDU-HackFest 2024
+
+Built with ❤️ for Bangladeshi farmers by passionate developers committed to solving real-world agricultural challenges through technology.
+
+### Contributors
+
+- **Backend Architecture**: Authentication, API design, Redis caching
+- **Frontend Development**: React components, offline-first implementation
+- **DevOps**: Deployment, monitoring, CI/CD setup
+- **Data Engineering**: CSV geocoding, ETCL algorithm
 
 ---
 
-## 🙏 Acknowledgments
+<div align="center">
 
-- OpenWeatherMap for weather API
-- MongoDB Atlas for database hosting
-- Upstash for Redis caching
-- Render for deployment platform
-- All open-source contributors
+### 🌾 HarvestGuard - Empowering Farmers Through Technology
 
----
+**Built with ❤️ for rural Bangladesh | Team Spring-23**
 
-## 📞 Support
+[⬆ Back to Top](#-harvestguard---smart-crop-management-system)
 
-For support, email support@harvestguard.com or open an issue on GitHub.
-
----
-
-## 🔮 Future Enhancements
-
-- [ ] Mobile app (React Native)
-- [ ] Gamification badges
-- [ ] SMS notifications for weather alerts
-- [ ] Machine learning for better predictions
-- [ ] Real sensor hardware integration
-- [ ] Multi-language support (beyond Bangla/English)
-- [ ] Farmer community forum
-- [ ] Marketplace integration
-
----
-
-**Built with ❤️ for Bangladeshi farmers**
+</div>
