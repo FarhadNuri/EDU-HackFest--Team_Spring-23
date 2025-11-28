@@ -10,6 +10,7 @@ import cropRoutes from "./routes/crop.route.js"
 import exportRoutes from "./routes/export.route.js"
 import syncRoutes from "./routes/sync.route.js"
 import weatherRoutes from "./routes/weather.route.js"
+import predictionRoutes from "./routes/prediction.route.js"
 dotenv.config()
 
 const app = express()
@@ -24,6 +25,7 @@ app.use("/api/crop",cropRoutes)
 app.use("/api/export",exportRoutes)
 app.use("/api/sync",syncRoutes)
 app.use("/api/weather",weatherRoutes)
+app.use("/api/prediction",predictionRoutes)
 
 app.listen(5000,()=> {
     console.log("✓ Server running on 5000")
