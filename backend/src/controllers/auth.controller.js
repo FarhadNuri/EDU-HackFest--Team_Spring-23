@@ -3,14 +3,15 @@ import bcrypt from "bcryptjs"
 import { redis } from "../lib/redis.lib.js";
 import jwt from "jsonwebtoken";
 import {generateToken,storeRefreshToken, setAuthCookies } from "../middlewares/auth.middleware.js";
+import { getDistrictByName } from "../lib/districts.lib.js";
 
 
 export async function signUp(req,res) {
 
-    const{email,password,fullname,mobile} = req.body
+    const{email,password,fullname,mobile,district} = req.body
 
-    if(!email || !password || !fullname || !mobile) {
-        return res.status(400).json({success:false,message: "Provide all fields"})
+    if(!email || !password || !fullname || !mobile || !district) {
+        return res.status(400).json({success:false,message: "Provide all fields including district"})
     }
 
     try {
@@ -31,6 +32,11 @@ export async function signUp(req,res) {
             return res.status(400).json({success: false, message: "User already exists"})
         }
 
+        const districtData = getDistrictByName(district);
+        if(!districtData) {
+            return res.status(400).json({success:false, message: "Invalid district name"})
+        }
+
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password,salt)
 
@@ -38,7 +44,10 @@ export async function signUp(req,res) {
             fullname: fullname,
             email: email,
             mobile: mobile,
-            password: hashedPassword
+            password: hashedPassword,
+            district: districtData.nameEn,
+            latitude: districtData.latitude,
+            longitude: districtData.longitude
         })
 
         if(newUser) {
@@ -46,7 +55,10 @@ export async function signUp(req,res) {
             res.status(201).json({user: {
                 _id:newUser._id,
                 fullname:newUser.fullname,
-                email:newUser.email
+                email:newUser.email,
+                district:newUser.district,
+                latitude:newUser.latitude,
+                longitude:newUser.longitude
             },message:"User created successfully"
             })
 
@@ -91,6 +103,9 @@ export async function logIn(req,res) {
             _id: currUser._id,
             fullname:currUser.fullname,
             email: currUser.email,
+            district: currUser.district,
+            latitude: currUser.latitude,
+            longitude: currUser.longitude
         },message: "login successfull"
         })
 
