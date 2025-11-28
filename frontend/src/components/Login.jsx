@@ -1,38 +1,16 @@
 import { useState } from 'react'
 
-const Login = ({ onClose, onSwitchToSignup, onLoginSuccess }) => {
+const Login = ({ onClose, onSwitchToSignup }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   })
-  const [error, setError] = useState('')
-
-  // Mock user data
-  const mockUsers = [
-    { email: 'farmer@harvestguard.com', password: 'password123' },
-    { email: 'demo@harvestguard.com', password: 'demo123' },
-    { email: 'test@test.com', password: 'test123' }
-  ]
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setError('')
-
-    // Check if credentials match any mock user
-    const user = mockUsers.find(
-      u => u.email === formData.email && u.password === formData.password
-    )
-
-    if (user) {
-      // Successful login
-      console.log('Login successful:', formData.email)
-      onLoginSuccess()
-      onClose()
-    } else {
-      // Failed login
-      setError('Invalid email or password. Try: demo@harvestguard.com / demo123')
-    }
+    // Handle login logic here
+    console.log('Login:', formData)
   }
 
   const handleChange = (e) => {
@@ -68,20 +46,6 @@ const Login = ({ onClose, onSwitchToSignup, onLoginSuccess }) => {
         {/* Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-2">Welcome Back</h2>
         <p className="text-sm sm:text-base text-gray-600 text-center mb-4 sm:mb-6 font-bengali">আবার স্বাগতম</p>
-
-        {/* Demo Credentials Info */}
-        <div className="bg-lime-50 border border-lime-200 rounded-lg p-3 mb-4">
-          <p className="text-xs text-lime-800 font-medium mb-1">Demo Credentials:</p>
-          <p className="text-xs text-lime-700">Email: demo@harvestguard.com</p>
-          <p className="text-xs text-lime-700">Password: demo123</p>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">

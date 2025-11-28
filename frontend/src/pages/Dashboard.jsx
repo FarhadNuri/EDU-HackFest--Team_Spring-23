@@ -5,8 +5,6 @@ import Alerts from '../components/Alerts'
 import Analytics from '../components/Analytics'
 import CropDetails from '../components/CropDetails'
 import Weather from '../components/Weather'
-import RiskPrediction from '../components/RiskPrediction'
-import CropHealthScanner from '../components/CropHealthScanner'
 import { useLanguage } from '../context/LanguageContext'
 
 const Dashboard = ({ onLogout }) => {
@@ -15,8 +13,6 @@ const Dashboard = ({ onLogout }) => {
   const [showAlerts, setShowAlerts] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showWeather, setShowWeather] = useState(false)
-  const [showRiskPrediction, setShowRiskPrediction] = useState(false)
-  const [showHealthScanner, setShowHealthScanner] = useState(false)
   const [selectedCrop, setSelectedCrop] = useState(null)
   const { language, toggleLanguage, t } = useLanguage()
 
@@ -132,7 +128,7 @@ const Dashboard = ({ onLogout }) => {
         {/* Quick Actions */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">{t('Quick Actions', 'দ্রুত কাজ')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => setShowCropReg(true)}
               className="flex items-center space-x-3 p-4 border-2 border-lime-200 hover:border-lime-400 hover:bg-lime-50 rounded-lg transition group"
@@ -150,7 +146,7 @@ const Dashboard = ({ onLogout }) => {
 
             <button
               onClick={() => setShowAnalytics(true)}
-              className="flex items-center space-x-3 p-4 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-lg transition group"
+              className="flex items-center space-x-3 p-4 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-lg transition group"
             >
               <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center transition">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +161,7 @@ const Dashboard = ({ onLogout }) => {
 
             <button
               onClick={() => setShowAlerts(true)}
-              className="flex items-center space-x-3 p-4 border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-50 rounded-lg transition group"
+              className="flex items-center space-x-3 p-4 border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50 rounded-lg transition group"
             >
               <div className="w-12 h-12 bg-orange-100 group-hover:bg-orange-200 rounded-lg flex items-center justify-center transition">
                 <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +176,7 @@ const Dashboard = ({ onLogout }) => {
 
             <button
               onClick={() => setShowWeather(true)}
-              className="flex items-center space-x-3 p-4 border-2 border-cyan-200 hover:border-cyan-400 hover:bg-cyan-50 rounded-lg transition group"
+              className="flex items-center space-x-3 p-4 border-2 border-gray-200 hover:border-cyan-400 hover:bg-cyan-50 rounded-lg transition group"
             >
               <div className="w-12 h-12 bg-cyan-100 group-hover:bg-cyan-200 rounded-lg flex items-center justify-center transition">
                 <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,37 +186,6 @@ const Dashboard = ({ onLogout }) => {
               <div className="text-left">
                 <p className="font-semibold text-gray-900">{t('Weather Forecast', 'আবহাওয়া পূর্বাভাস')}</p>
                 <p className="text-xs text-gray-600">{t('5-day local weather', '৫ দিনের স্থানীয় আবহাওয়া')}</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setShowRiskPrediction(true)}
-              className="flex items-center space-x-3 p-4 border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 rounded-lg transition group"
-            >
-              <div className="w-12 h-12 bg-purple-100 group-hover:bg-purple-200 rounded-lg flex items-center justify-center transition">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900">{t('Risk Prediction', 'ঝুঁকি পূর্বাভাস')}</p>
-                <p className="text-xs text-gray-600">{t('ETCL & recommendations', 'ETCL এবং সুপারিশ')}</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setShowHealthScanner(true)}
-              className="flex items-center space-x-3 p-4 border-2 border-green-200 hover:border-green-400 hover:bg-green-50 rounded-lg transition group"
-            >
-              <div className="w-12 h-12 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center transition">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900">{t('Health Scanner', 'স্বাস্থ্য স্ক্যানার')}</p>
-                <p className="text-xs text-gray-600">{t('AI crop detection', 'AI ফসল সনাক্তকরণ')}</p>
               </div>
             </button>
           </div>
@@ -268,8 +233,6 @@ const Dashboard = ({ onLogout }) => {
       {showAlerts && <Alerts onClose={() => setShowAlerts(false)} />}
       {showAnalytics && <Analytics onClose={() => setShowAnalytics(false)} />}
       {showWeather && <Weather onClose={() => setShowWeather(false)} />}
-      {showRiskPrediction && <RiskPrediction onClose={() => setShowRiskPrediction(false)} />}
-      {showHealthScanner && <CropHealthScanner onClose={() => setShowHealthScanner(false)} />}
       {selectedCrop && <CropDetails crop={selectedCrop} onClose={() => setSelectedCrop(null)} />}
     </div>
   )
