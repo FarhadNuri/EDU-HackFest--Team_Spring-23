@@ -1,0 +1,35 @@
+{
+  "name": "harvestguard",
+  "version": "1.0.0",
+  "main": "backend/src/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run install:backend && npm run install:frontend && npm run build:frontend",
+    "start": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "check": "node check-deployment.js",
+    "prestart": "echo 'Starting HarvestGuard server...'",
+    "postinstall": "echo 'Dependencies installed successfully'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FarhadNuri/EDU-HackFest--Team_Spring-23.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FarhadNuri/EDU-HackFest--Team_Spring-23/issues"
+  },
+  "homepage": "https://github.com/FarhadNuri/EDU-HackFest--Team_Spring-23#readme",
+  "description": ""
+}

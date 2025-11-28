@@ -2,6 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import cookieParser from "cookie-parser"
 import cors from "cors"
+import path from "path"
 import { connectDB } from "./lib/db.lib.js"
 import langRoutes from "./routes/lang.route.js"
 import authRoutes from "./routes/auth.route.js"
@@ -16,10 +17,28 @@ import districtRoutes from "./routes/district.route.js"
 dotenv.config()
 
 const app = express()
+const PORT = process.env.PORT || 5000
+
+const __dirname = path.resolve()
 
 // CORS configuration - allow frontend to access backend
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL || ''
+].filter(Boolean)
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true)
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'production') {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -38,8 +57,18 @@ app.use("/api/weather",weatherRoutes)
 app.use("/api/prediction",predictionRoutes)
 app.use("/api/districts",districtRoutes)
 
-app.listen(5000,()=> {
-    console.log("✓ Server running on 5000")
+if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "/frontend/dist")))
+
+    app.get(/^(?!\/api).*/, (req, res) => {
+        res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
+    })
+}
+
+app.listen(PORT, () => {
+    console.log(`✓ Server running on port ${PORT}`)
+    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
     console.log("✓ OpenWeather API Key:", process.env.OPENWEATHER_API_KEY ? "Loaded" : "✗ Missing")
+    console.log("✓ Redis URL:", process.env.UPSTASH_REDIS_URL ? "Loaded" : "✗ Missing")
     connectDB()
 })
