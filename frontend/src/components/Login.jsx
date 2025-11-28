@@ -1,16 +1,45 @@
 import { useState } from 'react'
+import { useAuthContext } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
-const Login = ({ onClose, onSwitchToSignup }) => {
+const Login = ({ onClose, onSwitchToSignup, onSuccess }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const { login } = useAuthContext()
+  const { showSuccess, showError } = useToast()
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log('Login:', formData)
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const result = await login({
+        email: formData.email,
+        password: formData.password
+      })
+
+      if (result.success) {
+        showSuccess('Login successful! Welcome back.')
+        if (onSuccess) onSuccess()
+        if (onClose) onClose()
+      } else {
+        setError(result.error || 'Login failed. Please try again.')
+        showError(result.error || 'Login failed')
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Network error. Please check your connection.'
+      setError(errorMsg)
+      showError(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (e) => {
@@ -46,6 +75,22 @@ const Login = ({ onClose, onSwitchToSignup }) => {
         {/* Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-2">Welcome Back</h2>
         <p className="text-sm sm:text-base text-gray-600 text-center mb-4 sm:mb-6 font-bengali">আবার স্বাগতম</p>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 mb-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -103,9 +148,20 @@ const Login = ({ onClose, onSwitchToSignup }) => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg"
+            disabled={isLoading}
+            className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
           >
-            Login / লগইন
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging in...
+              </>
+            ) : (
+              'Login / লগইন'
+            )}
           </button>
         </form>
 

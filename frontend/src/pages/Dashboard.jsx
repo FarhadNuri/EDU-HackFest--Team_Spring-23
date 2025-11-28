@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CropRegistration from '../components/CropRegistration'
 import Profile from '../components/Profile'
 import Alerts from '../components/Alerts'
@@ -6,6 +6,9 @@ import Analytics from '../components/Analytics'
 import CropDetails from '../components/CropDetails'
 import Weather from '../components/Weather'
 import { useLanguage } from '../context/LanguageContext'
+import { useAuthContext } from '../context/AuthContext'
+import { profileAPI, cropAPI, predictionAPI } from '../services/api'
+import { useOfflineSync } from '../hooks/useOfflineSync'
 
 const Dashboard = ({ onLogout }) => {
   const [showCropReg, setShowCropReg] = useState(false)
@@ -14,7 +17,78 @@ const Dashboard = ({ onLogout }) => {
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showWeather, setShowWeather] = useState(false)
   const [selectedCrop, setSelectedCrop] = useState(null)
+  const [crops, setCrops] = useState([])
+  const [cropCount, setCropCount] = useState(0)
+  const [activeAlerts, setActiveAlerts] = useState(0)
+  const [totalWeight, setTotalWeight] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
   const { language, toggleLanguage, t } = useLanguage()
+  const { user, logout } = useAuthContext()
+  const { isSyncing, pendingCount, syncOfflineData } = useOfflineSync()
+
+  // Fetch user crops and count
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true)
+      const [cropsResponse, countResponse, predictionsResponse] = await Promise.all([
+        cropAPI.getAllCrops(),
+        cropAPI.getCropCount(),
+        predictionAPI.getAllPredictions().catch(() => ({ data: { success: false } }))
+      ])
+      
+      if (cropsResponse.data.success) {
+        const cropsData = cropsResponse.data.crops || []
+        setCrops(cropsData)
+        
+        // Calculate total weight from all crops
+        const weight = cropsData.reduce((sum, crop) => {
+          const w = parseFloat(crop.weight) || 0
+          return sum + w
+        }, 0)
+        setTotalWeight(weight)
+      }
+      
+      if (countResponse.data.success) {
+        setCropCount(countResponse.data.count || 0)
+      }
+      
+      if (predictionsResponse.data.success) {
+        const predictions = predictionsResponse.data.predictions || []
+        
+        // Get reviewed alerts from localStorage
+        const reviewedAlertsData = localStorage.getItem('reviewedAlerts')
+        const reviewedAlerts = reviewedAlertsData ? new Set(JSON.parse(reviewedAlertsData)) : new Set()
+        
+        // Filter out reviewed alerts and count only high/medium/critical risk that aren't reviewed
+        const highRiskCount = predictions.filter(p => {
+          const isHighRisk = p.riskLevel === 'Critical' || p.riskLevel === 'High' || p.riskLevel === 'Medium'
+          const isNotReviewed = !reviewedAlerts.has(p.crop.id)
+          return isHighRisk && isNotReviewed
+        }).length
+        
+        setActiveAlerts(highRiskCount)
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  // Handler for successful crop registration
+  const handleCropRegistered = () => {
+    fetchDashboardData()
+  }
+
+  const handleLogout = () => {
+    logout()
+    if (onLogout) onLogout()
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,7 +123,7 @@ const Dashboard = ({ onLogout }) => {
               <span className="hidden sm:inline">{t('Profile', 'প্রোফাইল')}</span>
             </button>
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
             >
               {t('Logout', 'লগআউট')}
@@ -63,7 +137,11 @@ const Dashboard = ({ onLogout }) => {
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-2xl p-6 sm:p-8 text-white mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            {t('Welcome back, Rahim Ali! 👋', 'স্বাগতম, রহিম আলী! 👋')}
+            {isLoading ? (
+              <span className="animate-pulse">Loading...</span>
+            ) : (
+              t(`Welcome back, ${user?.fullname || 'Farmer'}! 👋`, `স্বাগতম, ${user?.fullname || 'কৃষক'}! 👋`)
+            )}
           </h1>
           <p className="text-lime-50">
             {t('Manage your crops and monitor storage conditions', 'আপনার ফসল পরিচালনা করুন এবং সংরক্ষণের অবস্থা পর্যবেক্ষণ করুন')}
@@ -71,7 +149,7 @@ const Dashboard = ({ onLogout }) => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-600 text-sm">{t('Total Crops', 'মোট ফসল')}</span>
@@ -81,8 +159,8 @@ const Dashboard = ({ onLogout }) => {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">12</p>
-            <p className="text-xs text-green-600 mt-1">{t('+2 this month', '+২ এই মাসে')}</p>
+            <p className="text-3xl font-bold text-gray-900">{isLoading ? '...' : cropCount}</p>
+            <p className="text-xs text-green-600 mt-1">{t('Total registered', 'মোট নিবন্ধিত')}</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -94,36 +172,73 @@ const Dashboard = ({ onLogout }) => {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">3</p>
+            <p className="text-3xl font-bold text-gray-900">{isLoading ? '...' : activeAlerts}</p>
             <p className="text-xs text-orange-600 mt-1">{t('Needs attention', 'মনোযোগ প্রয়োজন')}</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-600 text-sm">{t('Storage Used', 'ব্যবহৃত সংরক্ষণ')}</span>
+              <span className="text-gray-600 text-sm">{t('Total Weight', 'মোট ওজন')}</span>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">68%</p>
-            <p className="text-xs text-blue-600 mt-1">{t('2.4 tons capacity', '২.৪ টন ধারণক্ষমতা')}</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-600 text-sm">{t('Success Rate', 'সফলতার হার')}</span>
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">95%</p>
-            <p className="text-xs text-green-600 mt-1">{t('Above average', 'গড়ের উপরে')}</p>
+            <p className="text-3xl font-bold text-gray-900">{isLoading ? '...' : totalWeight.toFixed(1)}</p>
+            <p className="text-xs text-blue-600 mt-1">{t('kg stored', 'কেজি সংরক্ষিত')}</p>
           </div>
         </div>
+
+        {/* Offline Sync Status */}
+        {pendingCount > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-yellow-800">
+                  {pendingCount} crop{pendingCount > 1 ? 's' : ''} pending sync
+                </p>
+                <p className="text-xs text-yellow-600">
+                  {navigator.onLine ? 'Click sync to upload' : 'Will sync when you go online'}
+                </p>
+              </div>
+            </div>
+            {navigator.onLine && (
+              <button
+                onClick={async () => {
+                  const result = await syncOfflineData()
+                  if (result.success && result.count > 0) {
+                    fetchDashboardData()
+                  }
+                }}
+                disabled={isSyncing}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold"
+              >
+                {isSyncing ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Sync Now
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
@@ -170,7 +285,12 @@ const Dashboard = ({ onLogout }) => {
               </div>
               <div className="text-left">
                 <p className="font-semibold text-gray-900">{t('View Alerts', 'সতর্কতা দেখুন')}</p>
-                <p className="text-xs text-gray-600">{t('3 pending alerts', '৩টি মুলতুবি সতর্কতা')}</p>
+                <p className="text-xs text-gray-600">
+                  {activeAlerts > 0 
+                    ? t(`${activeAlerts} pending alerts`, `${activeAlerts}টি মুলতুবি সতর্কতা`)
+                    : t('No active alerts', 'কোন সক্রিয় সতর্কতা নেই')
+                  }
+                </p>
               </div>
             </button>
 
@@ -194,43 +314,51 @@ const Dashboard = ({ onLogout }) => {
         {/* Recent Crops */}
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-900 mb-4">{t('Recent Crops', 'সাম্প্রতিক ফসল')}</h2>
-          <div className="space-y-3">
-            {[
-              { name: 'Rice BR-28', quantity: '500 kg', status: 'Good', color: 'green' },
-              { name: 'Wheat', quantity: '300 kg', status: 'Warning', color: 'orange' },
-              { name: 'Potato', quantity: '200 kg', status: 'Good', color: 'green' },
-            ].map((crop, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedCrop(crop)}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-lime-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-lime-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                    </svg>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-4 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : crops.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p className="font-medium">{t('No crops registered yet', 'এখনও কোন ফসল নিবন্ধিত নেই')}</p>
+              <p className="text-sm mt-1">{t('Click "Register New Crop" to get started', 'শুরু করতে "নতুন ফসল নিবন্ধন" ক্লিক করুন')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {crops.slice(0, 5).map((crop) => (
+                <button
+                  key={crop._id}
+                  onClick={() => setSelectedCrop(crop)}
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-lime-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-lime-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-gray-900">{crop.cropType}</p>
+                      <p className="text-sm text-gray-600">{crop.weight} • {crop.storageType}</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-gray-900">{crop.name}</p>
-                    <p className="text-sm text-gray-600">{crop.quantity}</p>
-                  </div>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  crop.color === 'green' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                }`}>
-                  {crop.status}
-                </span>
-              </button>
-            ))}
-          </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    {crop.storageLocation}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
       {/* Modals */}
-      {showCropReg && <CropRegistration onClose={() => setShowCropReg(false)} />}
+      {showCropReg && <CropRegistration onClose={() => setShowCropReg(false)} onSuccess={handleCropRegistered} />}
       {showProfile && <Profile onClose={() => setShowProfile(false)} />}
-      {showAlerts && <Alerts onClose={() => setShowAlerts(false)} />}
+      {showAlerts && <Alerts onClose={() => { setShowAlerts(false); fetchDashboardData(); }} onCropSelect={(crop) => { setSelectedCrop(crop); setShowAlerts(false); }} />}
       {showAnalytics && <Analytics onClose={() => setShowAnalytics(false)} />}
       {showWeather && <Weather onClose={() => setShowWeather(false)} />}
       {selectedCrop && <CropDetails crop={selectedCrop} onClose={() => setSelectedCrop(null)} />}

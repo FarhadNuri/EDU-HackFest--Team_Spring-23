@@ -4,8 +4,12 @@ const cropSchema = new mongoose.Schema({
     cropType:{
         type:String,
         required:true,
-        enum: ["Paddy", "Rice"]
-    }, 
+        enum: ["Paddy", "Rice", "Wheat", "Corn", "Potato", "Vegetables", "Fruits"]
+    },
+    variety: {
+        type: String,
+        required: false
+    },
     weight: {
         type: String,
         required:true
@@ -21,7 +25,11 @@ const cropSchema = new mongoose.Schema({
     storageType: {
         type:String,
         required:true,
-        enum: ["Jute Bag Stack", "Silo", "Open Area"]
+        enum: ["Jute Bag Stack", "Silo", "Open Area", "Warehouse", "Cold Storage", "Home Storage"]
+    },
+    expectedStorageDuration: {
+        type: Number,
+        required: true
     },
     farmerId: {
         type: mongoose.Schema.Types.ObjectId,

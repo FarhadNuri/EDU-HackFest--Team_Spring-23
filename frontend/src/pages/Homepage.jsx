@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import WorkflowCard from '../components/WorkflowCard'
 import AnimatedSupplyChain from '../components/AnimatedSupplyChain'
+import Login from '../components/Login'
+import Signup from '../components/Signup'
 import { useLanguage } from '../context/LanguageContext'
 
-const Homepage = ({ onLoginClick, onSignupClick }) => {
+const Homepage = ({ onLoginSuccess, onShowDashboard }) => {
   const { language, toggleLanguage, t } = useLanguage()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(true)
+  const [showLogin, setShowLogin] = useState(false)
+  const [showSignup, setShowSignup] = useState(false)
 
   const farmingImages = [
     'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1920&h=600&fit=crop',
@@ -65,7 +69,7 @@ const Homepage = ({ onLoginClick, onSignupClick }) => {
 
           <div className="flex items-center space-x-3 sm:space-x-4">
             <button 
-              onClick={onLoginClick}
+              onClick={() => setShowLogin(true)}
               className="bg-lime-600 text-white px-4 sm:px-6 py-2 rounded-md hover:bg-lime-700 transition text-sm sm:text-base"
             >
               {t('Login', 'লগইন')}
@@ -125,7 +129,7 @@ const Homepage = ({ onLoginClick, onSignupClick }) => {
             
             {/* CTA Button */}
             <button 
-              onClick={onSignupClick}
+              onClick={() => setShowSignup(true)}
               className={`bg-lime-600 text-white px-10 py-4 rounded-lg text-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-xl mb-4 ${language === 'bn' ? 'font-bengali' : ''}`}
             >
               {t('Start Now', 'এখনই শুরু করুন')}
@@ -173,6 +177,36 @@ const Homepage = ({ onLoginClick, onSignupClick }) => {
 
       {/* Animated Supply Chain Section */}
       <AnimatedSupplyChain />
+
+      {/* Login Modal */}
+      {showLogin && (
+        <Login 
+          onClose={() => setShowLogin(false)}
+          onSwitchToSignup={() => {
+            setShowLogin(false)
+            setShowSignup(true)
+          }}
+          onSuccess={() => {
+            setShowLogin(false)
+            if (onLoginSuccess) onLoginSuccess()
+          }}
+        />
+      )}
+
+      {/* Signup Modal */}
+      {showSignup && (
+        <Signup 
+          onClose={() => setShowSignup(false)}
+          onSwitchToLogin={() => {
+            setShowSignup(false)
+            setShowLogin(true)
+          }}
+          onSuccess={() => {
+            setShowSignup(false)
+            setShowLogin(true)
+          }}
+        />
+      )}
     </div>
   )
 }

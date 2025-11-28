@@ -1,22 +1,67 @@
 import { useState } from 'react'
+import { cropAPI } from '../services/api'
+import { useToast } from '../context/ToastContext'
 
-const CropRegistration = ({ onClose }) => {
+const CropRegistration = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    cropType: 'rice',
+    cropType: 'Rice',
     variety: '',
-    quantity: '',
-    unit: 'kg',
+    weight: '',
     harvestDate: '',
     storageLocation: '',
-    storageType: 'warehouse',
-    expectedDuration: '',
-    notes: ''
+    storageType: 'Warehouse',
+    expectedStorageDuration: ''
   })
+  const [loading, setLoading] = useState(false)
+  const { showSuccess, showError } = useToast()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Crop Registration:', formData)
-    // Handle crop registration logic
+    setLoading(true)
+
+    try {
+      // Prepare data for backend
+      const cropData = {
+        cropType: formData.cropType,
+        variety: formData.variety || undefined,
+        weight: formData.weight,
+        harvestDate: formData.harvestDate,
+        storageLocation: formData.storageLocation,
+        storageType: formData.storageType,
+        expectedStorageDuration: parseInt(formData.expectedStorageDuration)
+      }
+
+      // Check if offline
+      if (!navigator.onLine) {
+        // Save to localStorage
+        const pending = JSON.parse(localStorage.getItem('pendingCrops') || '[]')
+        pending.push({
+          ...cropData,
+          localId: `offline-${Date.now()}`,
+          queuedAt: new Date().toISOString()
+        })
+        localStorage.setItem('pendingCrops', JSON.stringify(pending))
+        
+        showSuccess('Saved offline! Will sync when online.')
+        if (onSuccess) onSuccess()
+        onClose()
+        return
+      }
+
+      // If online, normal API call
+      const response = await cropAPI.registerCrop(cropData)
+      
+      if (response.data.success) {
+        showSuccess('Crop registered successfully!')
+        if (onSuccess) onSuccess()
+        onClose()
+      }
+    } catch (error) {
+      console.error('Crop registration error:', error)
+      showError(error.response?.data?.message || 'Failed to register crop')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (e) => {
@@ -72,18 +117,19 @@ const CropRegistration = ({ onClose }) => {
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
                   required
                 >
-                  <option value="rice">Rice / ধান</option>
-                  <option value="wheat">Wheat / গম</option>
-                  <option value="corn">Corn / ভুট্টা</option>
-                  <option value="potato">Potato / আলু</option>
-                  <option value="vegetables">Vegetables / সবজি</option>
-                  <option value="fruits">Fruits / ফল</option>
+                  <option value="Rice">Rice / ধান</option>
+                  <option value="Paddy">Paddy / পাডি</option>
+                  <option value="Wheat">Wheat / গম</option>
+                  <option value="Corn">Corn / ভুট্টা</option>
+                  <option value="Potato">Potato / আলু</option>
+                  <option value="Vegetables">Vegetables / সবজি</option>
+                  <option value="Fruits">Fruits / ফল</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Variety / জাত
+                  Variety / জাত <span className="text-gray-500">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -92,43 +138,24 @@ const CropRegistration = ({ onClose }) => {
                   onChange={handleChange}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
                   placeholder="e.g., BR-28"
-                  required
                 />
               </div>
             </div>
 
-            {/* Quantity */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Quantity / পরিমাণ
-                </label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={formData.quantity}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
-                  placeholder="100"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Unit / একক
-                </label>
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
-                >
-                  <option value="kg">Kg / কেজি</option>
-                  <option value="ton">Ton / টন</option>
-                  <option value="quintal">Quintal / কুইন্টাল</option>
-                </select>
-              </div>
+            {/* Weight */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Weight (Kg) / ওজন (কেজি)
+              </label>
+              <input
+                type="text"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
+                placeholder="100"
+                required
+              />
             </div>
 
             {/* Harvest Date */}
@@ -172,11 +199,14 @@ const CropRegistration = ({ onClose }) => {
                   value={formData.storageType}
                   onChange={handleChange}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
+                  required
                 >
-                  <option value="warehouse">Warehouse / গুদাম</option>
-                  <option value="silo">Silo / সাইলো</option>
-                  <option value="cold-storage">Cold Storage / হিমাগার</option>
-                  <option value="home">Home / বাড়ি</option>
+                  <option value="Warehouse">Warehouse / গুদাম</option>
+                  <option value="Silo">Silo / সাইলো</option>
+                  <option value="Jute Bag Stack">Jute Bag Stack / পাটের বস্তার স্তুপ</option>
+                  <option value="Open Area">Open Area / খোলা এলাকা</option>
+                  <option value="Cold Storage">Cold Storage / হিমাগার</option>
+                  <option value="Home Storage">Home Storage / বাড়িতে সংরক্ষণ</option>
                 </select>
               </div>
             </div>
@@ -188,36 +218,23 @@ const CropRegistration = ({ onClose }) => {
               </label>
               <input
                 type="number"
-                name="expectedDuration"
-                value={formData.expectedDuration}
+                name="expectedStorageDuration"
+                value={formData.expectedStorageDuration}
                 onChange={handleChange}
                 className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent"
                 placeholder="30"
                 required
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Additional Notes / অতিরিক্ত তথ্য (Optional)
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows="3"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent resize-none"
-                placeholder="Any additional information..."
+                min="1"
               />
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg"
+              disabled={loading}
+              className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              Register Crop / ফসল নিবন্ধন করুন
+              {loading ? 'Registering...' : 'Register Crop / ফসল নিবন্ধন করুন'}
             </button>
           </form>
         </div>

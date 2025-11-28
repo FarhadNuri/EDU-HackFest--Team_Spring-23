@@ -10,8 +10,8 @@ export async function signUp(req,res) {
 
     const{email,password,fullname,mobile,district} = req.body
 
-    if(!email || !password || !fullname || !mobile || !district) {
-        return res.status(400).json({success:false,message: "Provide all fields including district"})
+    if(!email || !password || !fullname || !mobile) {
+        return res.status(400).json({success:false,message: "Provide all required fields"})
     }
 
     try {
@@ -32,9 +32,19 @@ export async function signUp(req,res) {
             return res.status(400).json({success: false, message: "User already exists"})
         }
 
-        const districtData = getDistrictByName(district);
-        if(!districtData) {
-            return res.status(400).json({success:false, message: "Invalid district name"})
+        let districtData = null;
+        let userDistrict = null;
+        let userLatitude = null;
+        let userLongitude = null;
+
+        if (district) {
+            districtData = getDistrictByName(district);
+            if(!districtData) {
+                return res.status(400).json({success:false, message: "Invalid district name"})
+            }
+            userDistrict = districtData.nameEn;
+            userLatitude = districtData.latitude;
+            userLongitude = districtData.longitude;
         }
 
         const salt = await bcrypt.genSalt(10)
@@ -45,9 +55,9 @@ export async function signUp(req,res) {
             email: email,
             mobile: mobile,
             password: hashedPassword,
-            district: districtData.nameEn,
-            latitude: districtData.latitude,
-            longitude: districtData.longitude
+            district: userDistrict,
+            latitude: userLatitude,
+            longitude: userLongitude
         })
 
         if(newUser) {
@@ -146,13 +156,13 @@ export async function refreshToken(req,res) {
         const accessToken = jwt.sign(
             {userId:decoded.userId},
             process.env.REFRESH_TOKEN_SECRET,
-            {expiresIn: "15m"})
+            {expiresIn: "1d"})
 
         res.cookie("accessToken",accessToken, {
             httpOnly:true, //prevents XSS attacks
             secure: process.env.NODE_ENV === "production",
             sameSite:  "strict", //prevents CSRF attacks
-            maxAge: 15*60*1000
+            maxAge: 24*60*60*1000
         })
         res.json({message: "Token refreshed successfully"})
     } catch(error) {

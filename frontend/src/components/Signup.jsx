@@ -1,20 +1,136 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useAuthContext } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { districtsAPI } from '../services/api'
 
-const Signup = ({ onClose, onSwitchToLogin }) => {
+const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
+    district: '',
     userType: 'farmer',
     agreeToTerms: false
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState({})
+  const [districtSuggestions, setDistrictSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const districtInputRef = useRef(null)
+  const suggestionsRef = useRef(null)
 
-  const handleSubmit = (e) => {
+  const { register } = useAuthContext()
+  const { showSuccess, showError } = useToast()
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target) &&
+        !districtInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const validateForm = () => {
+    const errors = {}
+
+    // Name validation
+    if (formData.fullName.trim().length < 2) {
+      errors.fullName = 'Name must be at least 2 characters'
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      errors.email = 'Please enter a valid email address'
+    }
+
+    // Phone validation
+    const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
+    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+      errors.phone = 'Please enter a valid phone number'
+    }
+
+    // District validation
+    if (!formData.district) {
+      errors.district = 'Please select your district/upazila'
+    }
+
+    // Password validation
+    if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters'
+    }
+
+    // Confirm password validation
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match'
+    }
+
+    // Terms validation
+    if (!formData.agreeToTerms) {
+      errors.agreeToTerms = 'You must agree to the terms and conditions'
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle signup logic here
-    console.log('Signup:', formData)
+    setError('')
+    setValidationErrors({})
+
+    // Validate form
+    if (!validateForm()) {
+      showError('Please fix the errors in the form')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const result = await register({
+        fullname: formData.fullName,
+        email: formData.email,
+        mobile: formData.phone,
+        password: formData.password,
+        district: formData.district,
+        userType: formData.userType
+      })
+
+      if (result.success) {
+        showSuccess('Account created successfully! Please login with your credentials.')
+        // Delay closing to allow toast to display and switch to login
+        setTimeout(() => {
+          if (onSwitchToLogin) {
+            onSwitchToLogin()
+          } else {
+            if (onSuccess) onSuccess()
+            if (onClose) onClose()
+          }
+        }, 1500)
+      } else {
+        setError(result.error || 'Registration failed. Please try again.')
+        showError(result.error || 'Registration failed')
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Network error. Please check your connection.'
+      setError(errorMsg)
+      showError(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (e) => {
@@ -23,6 +139,40 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  // Handle district input with search
+  const handleDistrictChange = async (e) => {
+    const value = e.target.value
+    setFormData(prev => ({ ...prev, district: value }))
+    
+    if (value.length < 2) {
+      setDistrictSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setIsSearching(true)
+    setShowSuggestions(true)
+
+    try {
+      const response = await districtsAPI.searchDistricts(value)
+      if (response.data.success) {
+        setDistrictSuggestions(response.data.districts)
+      }
+    } catch (error) {
+      console.error('Error searching districts:', error)
+      setDistrictSuggestions([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Handle selecting a suggestion
+  const handleSelectDistrict = (district) => {
+    setFormData(prev => ({ ...prev, district: district.nameEn }))
+    setShowSuggestions(false)
+    setDistrictSuggestions([])
   }
 
   return (
@@ -59,6 +209,22 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-2">Create Account</h2>
         <p className="text-sm sm:text-base text-gray-600 text-center mb-4 sm:mb-6 font-bengali">নতুন অ্যাকাউন্ট তৈরি করুন</p>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 mb-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Full Name */}
@@ -72,10 +238,15 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                validationErrors.fullName ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="আপনার নাম"
               required
             />
+            {validationErrors.fullName && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.fullName}</p>
+            )}
           </div>
 
           {/* Email */}
@@ -89,10 +260,15 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                validationErrors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="your@email.com"
               required
             />
+            {validationErrors.email && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
+            )}
           </div>
 
           {/* Phone */}
@@ -106,10 +282,77 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                validationErrors.phone ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="+880 1XXX-XXXXXX"
               required
             />
+            {validationErrors.phone && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.phone}</p>
+            )}
+          </div>
+
+          {/* District/Upazila with Autocomplete */}
+          <div className="relative">
+            <label htmlFor="district" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+              District/Upazila / জেলা/উপজেলা
+            </label>
+            <div className="relative">
+              <input
+                ref={districtInputRef}
+                type="text"
+                id="district"
+                name="district"
+                value={formData.district}
+                onChange={handleDistrictChange}
+                onFocus={() => formData.district.length >= 2 && setShowSuggestions(true)}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                  validationErrors.district ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Start typing... (e.g., Dhaka, Rajshahi)"
+                autoComplete="off"
+                required
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Suggestions Dropdown */}
+            {showSuggestions && districtSuggestions.length > 0 && (
+              <div 
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+              >
+                {districtSuggestions.map((district, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSelectDistrict(district)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-lime-50 focus:bg-lime-50 focus:outline-none transition flex justify-between items-center border-b border-gray-100 last:border-b-0"
+                  >
+                    <span className="text-sm font-medium text-gray-900">{district.nameEn}</span>
+                    <span className="text-sm text-gray-500">{district.nameBn}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {showSuggestions && !isSearching && formData.district.length >= 2 && districtSuggestions.length === 0 && (
+              <div 
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3"
+              >
+                <p className="text-sm text-gray-500 text-center">No districts found. Try different spelling.</p>
+              </div>
+            )}
+            
+            {validationErrors.district && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.district}</p>
+            )}
           </div>
 
           {/* User Type */}
@@ -158,10 +401,15 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                validationErrors.password ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="••••••••"
               required
             />
+            {validationErrors.password && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
+            )}
           </div>
 
           {/* Confirm Password */}
@@ -175,10 +423,15 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition ${
+                validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="••••••••"
               required
             />
+            {validationErrors.confirmPassword && (
+              <p className="mt-1 text-xs text-red-600">{validationErrors.confirmPassword}</p>
+            )}
           </div>
 
           {/* Terms & Conditions */}
@@ -203,9 +456,20 @@ const Signup = ({ onClose, onSwitchToLogin }) => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg"
+            disabled={isLoading}
+            className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
           >
-            Sign Up / সাইন আপ
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating account...
+              </>
+            ) : (
+              'Sign Up / সাইন আপ'
+            )}
           </button>
         </form>
 
