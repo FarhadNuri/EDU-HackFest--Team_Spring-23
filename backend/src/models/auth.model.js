@@ -24,6 +24,18 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:["en","ban"],
         default:"en",
+    },
+    district: {
+        type: String,
+        required: true
+    },
+    latitude: {
+        type: Number,
+        required: true
+    },
+    longitude: {
+        type: Number,
+        required: true
     }
 },{timestamps: true})
 
