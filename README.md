@@ -4,13 +4,17 @@
 
 **An enterprise-grade, offline-first crop management platform engineered for rural connectivity constraints in Bangladesh**
 
+
+</div>
+## Live Demo
+[Live Demo](https://edu-hackfest-teamspring-23-production.up.railway.app/)
+
 ## 🙏 Acknowledgments
 
 - **[bd-geocode-with-lat-long](https://github.com/mdtanjilhasan/bd-geocode-with-lat-long)** - Comprehensive Bangladesh geocoding dataset (64 districts, 544 upazilas with coordinates)
 
 [Live Demo](https://edu-hackfest-teamspring-23-production.up.railway.app/)
 
-</div>
 
 ### Key Metrics
 
@@ -28,6 +32,7 @@ Rural Bangladesh faces:
 - **Language Barriers** - Bilingual support (Bangla/English) required
 - **Real-time Weather Needs** - Hyper-local weather for 544 upazilas
 - **Crop Loss Prevention** - Need predictive analytics for storage risks
+
 
 ### Our Solution
 
