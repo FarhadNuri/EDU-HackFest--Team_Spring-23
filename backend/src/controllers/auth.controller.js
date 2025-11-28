@@ -81,7 +81,8 @@ export async function signUp(req,res) {
         }
 
     } catch (error) {
-        res.status(500).json({success:false,message: "internal server error"})
+        console.error('❌ SignUp error:', error.message, error.stack);
+        res.status(500).json({success:false,message: "internal server error", error: process.env.NODE_ENV === 'development' ? error.message : undefined})
     }
 }
 
@@ -120,7 +121,8 @@ export async function logIn(req,res) {
         })
 
     } catch (error) {
-        res.status(500).json({success:false,message:"Internal server error"})
+        console.error('❌ Login error:', error.message, error.stack);
+        res.status(500).json({success:false,message:"Internal server error", error: process.env.NODE_ENV === 'development' ? error.message : undefined})
     }
 }
 
