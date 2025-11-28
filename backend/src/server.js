@@ -20,6 +20,12 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 const __dirname = path.resolve()
+const isProduction = process.env.NODE_ENV === 'production'
+
+// Determine correct path to frontend dist
+const frontendDistPath = isProduction 
+  ? path.join(__dirname, '../frontend/dist')  // Railway structure
+  : path.join(__dirname, 'frontend/dist')     // Local structure
 
 // CORS configuration - allow frontend to access backend
 const allowedOrigins = [
@@ -57,11 +63,11 @@ app.use("/api/weather",weatherRoutes)
 app.use("/api/prediction",predictionRoutes)
 app.use("/api/districts",districtRoutes)
 
-if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "/frontend/dist")))
+if (isProduction) {
+    app.use(express.static(frontendDistPath))
 
     app.get(/^(?!\/api).*/, (req, res) => {
-        res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
+        res.sendFile(path.join(frontendDistPath, "index.html"))
     })
 }
 
