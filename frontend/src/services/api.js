@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 // API Configuration
-// In production, use relative URLs since backend serves the frontend
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production' ? '/api' : 'http://localhost:5000/api'
-);
+// Use relative URLs for production, localhost for development
+const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isDevelopment ? 'http://localhost:5000/api' : '/api';
 
 // Create axios instance with default config
 const api = axios.create({
