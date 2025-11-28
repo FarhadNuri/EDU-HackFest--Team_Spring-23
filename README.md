@@ -1,19 +1,20 @@
 # 🌾 HarvestGuard - Smart Crop Management System
 
-<div align="center">
+<div>
 
 **An enterprise-grade, offline-first crop management platform engineered for rural connectivity constraints in Bangladesh**
 
 
 </div>
-## Live Demo
-[Live Demo](https://edu-hackfest-teamspring-23-production.up.railway.app/)
 
-## 🙏 Acknowledgments
+### Live Demo
+
+[edu-hackfest-teamspring-23-production.up.railway](https://edu-hackfest-teamspring-23-production.up.railway.app/)
+
+## Acknowledgments
 
 - **[bd-geocode-with-lat-long](https://github.com/mdtanjilhasan/bd-geocode-with-lat-long)** - Comprehensive Bangladesh geocoding dataset (64 districts, 544 upazilas with coordinates)
 
-[Live Demo](https://edu-hackfest-teamspring-23-production.up.railway.app/)
 
 
 ### Key Metrics
