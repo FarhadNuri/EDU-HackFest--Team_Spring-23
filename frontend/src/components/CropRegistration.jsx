@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../context/LanguageContext'
 
 const CropRegistration = ({ onClose }) => {
+  const { language, t } = useLanguage()
   const [formData, setFormData] = useState({
     cropType: 'rice',
     variety: '',
@@ -53,8 +55,9 @@ const CropRegistration = ({ onClose }) => {
                 <path d="M12 2C11.5 2 11 2.19 10.59 2.59C10.2 3 10 3.5 10 4C10 4.5 10.2 5 10.59 5.41C11 5.81 11.5 6 12 6C12.5 6 13 5.81 13.41 5.41C13.81 5 14 4.5 14 4C14 3.5 13.81 3 13.41 2.59C13 2.19 12.5 2 12 2M12 7C10.9 7 10 7.9 10 9C10 9.79 10.5 10.47 11.21 10.82C9.89 11.46 9 12.86 9 14.5C9 15.14 9.12 15.75 9.34 16.31C8.5 15.5 8 14.3 8 13C8 10.79 9.79 9 12 9C14.21 9 16 10.79 16 13C16 14.3 15.5 15.5 14.66 16.31C14.88 15.75 15 15.14 15 14.5C15 12.86 14.11 11.46 12.79 10.82C13.5 10.47 14 9.79 14 9C14 7.9 13.1 7 12 7M12 11C10.62 11 9.5 12.12 9.5 13.5C9.5 14.88 10.62 16 12 16C13.38 16 14.5 14.88 14.5 13.5C14.5 12.12 13.38 11 12 11M7 14C5.9 14 5 14.9 5 16C5 17.1 5.9 18 7 18C8.1 18 9 17.1 9 16C9 14.9 8.1 14 7 14M17 14C15.9 14 15 14.9 15 16C15 17.1 15.9 18 17 18C18.1 18 19 17.1 19 16C19 14.9 18.1 14 17 14M7 19C5.34 19 4 20.34 4 22H10C10 20.34 8.66 19 7 19M17 19C15.34 19 14 20.34 14 22H20C20 20.34 18.66 19 17 19Z" />
               </svg>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Register Your Crop</h2>
-            <p className="text-sm sm:text-base text-gray-600 font-bengali">আপনার ফসল নিবন্ধন করুন</p>
+            <h2 className={`text-2xl sm:text-3xl font-bold text-gray-900 mb-2 ${language === 'bn' ? 'font-bengali' : ''}`}>
+              {t('Register Your Crop', 'আপনার ফসল নিবন্ধন করুন')}
+            </h2>
           </div>
 
           {/* Form */}
@@ -62,8 +65,8 @@ const CropRegistration = ({ onClose }) => {
             {/* Crop Type */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Crop Type / ফসলের ধরন
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Crop Type', 'ফসলের ধরন')}
                 </label>
                 <select
                   name="cropType"
@@ -82,8 +85,8 @@ const CropRegistration = ({ onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Variety / জাত
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Variety', 'জাত')}
                 </label>
                 <input
                   type="text"
@@ -100,8 +103,8 @@ const CropRegistration = ({ onClose }) => {
             {/* Quantity */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Quantity / পরিমাণ
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Quantity', 'পরিমাণ')}
                 </label>
                 <input
                   type="number"
@@ -115,8 +118,8 @@ const CropRegistration = ({ onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Unit / একক
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Unit', 'একক')}
                 </label>
                 <select
                   name="unit"
@@ -133,8 +136,8 @@ const CropRegistration = ({ onClose }) => {
 
             {/* Harvest Date */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Harvest Date / ফসল কাটার তারিখ
+              <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('Harvest Date', 'ফসল কাটার তারিখ')}
               </label>
               <input
                 type="date"
@@ -149,8 +152,8 @@ const CropRegistration = ({ onClose }) => {
             {/* Storage Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Storage Location / সংরক্ষণের স্থান
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Storage Location', 'সংরক্ষণের স্থান')}
                 </label>
                 <input
                   type="text"
@@ -164,8 +167,8 @@ const CropRegistration = ({ onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Storage Type / সংরক্ষণের ধরন
+                <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Storage Type', 'সংরক্ষণের ধরন')}
                 </label>
                 <select
                   name="storageType"
@@ -183,8 +186,8 @@ const CropRegistration = ({ onClose }) => {
 
             {/* Expected Duration */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Expected Storage Duration (days) / প্রত্যাশিত সংরক্ষণ সময় (দিন)
+              <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('Expected Storage Duration (days)', 'প্রত্যাশিত সংরক্ষণ সময় (দিন)')}
               </label>
               <input
                 type="number"
@@ -199,8 +202,8 @@ const CropRegistration = ({ onClose }) => {
 
             {/* Notes */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Additional Notes / অতিরিক্ত তথ্য (Optional)
+              <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('Additional Notes (Optional)', 'অতিরিক্ত তথ্য (ঐচ্ছিক)')}
               </label>
               <textarea
                 name="notes"
@@ -215,9 +218,9 @@ const CropRegistration = ({ onClose }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg"
+              className={`w-full bg-lime-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-lime-700 transition-all hover:scale-105 shadow-lg ${language === 'bn' ? 'font-bengali' : ''}`}
             >
-              Register Crop / ফসল নিবন্ধন করুন
+              {t('Register Crop', 'ফসল নিবন্ধন করুন')}
             </button>
           </form>
         </div>

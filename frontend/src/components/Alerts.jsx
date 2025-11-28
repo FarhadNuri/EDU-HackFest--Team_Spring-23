@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../context/LanguageContext'
 
 const Alerts = ({ onClose }) => {
+  const { language, t } = useLanguage()
   const [alerts] = useState([
     {
       id: 1,
@@ -125,23 +127,36 @@ const Alerts = ({ onClose }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Alerts & Notifications</h2>
-            <p className="text-sm sm:text-base text-gray-600 font-bengali">সতর্কতা এবং বিজ্ঞপ্তি</p>
+            <h2 className={`text-2xl sm:text-3xl font-bold text-gray-900 mb-2 ${language === 'bn' ? 'font-bengali' : ''}`}>
+              {t('Alerts & Notifications', 'সতর্কতা এবং বিজ্ঞপ্তি')}
+            </h2>
           </div>
 
           {/* Alert Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-orange-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-orange-600">1</p>
-              <p className="text-xs text-gray-600">High Priority</p>
+              <p className={`text-2xl font-bold text-orange-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {language === 'bn' ? '১' : '1'}
+              </p>
+              <p className={`text-xs text-gray-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('High Priority', 'উচ্চ অগ্রাধিকার')}
+              </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">1</p>
-              <p className="text-xs text-gray-600">Medium</p>
+              <p className={`text-2xl font-bold text-blue-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {language === 'bn' ? '১' : '1'}
+              </p>
+              <p className={`text-xs text-gray-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('Medium', 'মাঝারি')}
+              </p>
             </div>
             <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">1</p>
-              <p className="text-xs text-gray-600">Resolved</p>
+              <p className={`text-2xl font-bold text-green-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {language === 'bn' ? '১' : '1'}
+              </p>
+              <p className={`text-xs text-gray-600 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                {t('Resolved', 'সমাধান')}
+              </p>
             </div>
           </div>
 
@@ -162,18 +177,23 @@ const Alerts = ({ onClose }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{alert.title}</h3>
-                          <p className="text-xs text-gray-600 font-bengali">{alert.titleBengali}</p>
+                          <h3 className={`font-semibold text-gray-900 text-sm sm:text-base ${language === 'bn' ? 'font-bengali' : ''}`}>
+                            {language === 'bn' ? alert.titleBengali : alert.title}
+                          </h3>
                         </div>
-                        <span className={`${styles.badge} px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0`}>
-                          {alert.severity}
+                        <span className={`${styles.badge} px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                          {language === 'bn' 
+                            ? (alert.severity === 'high' ? 'উচ্চ' : alert.severity === 'medium' ? 'মাঝারি' : 'নিম্ন')
+                            : alert.severity
+                          }
                         </span>
                       </div>
                       
-                      <p className="text-sm text-gray-700 mb-1">{alert.message}</p>
-                      <p className="text-xs text-gray-600 font-bengali mb-3">{alert.messageBengali}</p>
+                      <p className={`text-sm leading-relaxed ${language === 'bn' ? 'font-bengali text-base' : 'text-gray-700'}`}>
+                        {language === 'bn' ? alert.messageBengali : alert.message}
+                      </p>
                       
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                      <div className={`flex flex-wrap items-center gap-3 text-xs text-gray-600 mt-3 ${language === 'bn' ? 'font-bengali' : ''}`}>
                         <div className="flex items-center space-x-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -197,11 +217,11 @@ const Alerts = ({ onClose }) => {
                       
                       {alert.type === 'warning' && (
                         <div className="mt-3 flex gap-2">
-                          <button className="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition">
-                            Take Action
+                          <button className={`px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition ${language === 'bn' ? 'font-bengali' : ''}`}>
+                            {t('Take Action', 'ব্যবস্থা নিন')}
                           </button>
-                          <button className="px-3 py-1.5 bg-white text-gray-700 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition">
-                            Dismiss
+                          <button className={`px-3 py-1.5 bg-white text-gray-700 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition ${language === 'bn' ? 'font-bengali' : ''}`}>
+                            {t('Dismiss', 'বাতিল')}
                           </button>
                         </div>
                       )}
@@ -214,8 +234,8 @@ const Alerts = ({ onClose }) => {
 
           {/* Footer */}
           <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-            <button className="text-sm text-lime-600 hover:text-lime-700 font-medium">
-              View All Notifications →
+            <button className={`text-sm text-lime-600 hover:text-lime-700 font-medium ${language === 'bn' ? 'font-bengali' : ''}`}>
+              {t('View All Notifications →', 'সমস্ত বিজ্ঞপ্তি দেখুন →')}
             </button>
           </div>
         </div>
