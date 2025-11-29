@@ -8,7 +8,7 @@ import { getDistrictByName } from "../lib/districts.lib.js";
 
 export async function signUp(req,res) {
 
-    const{email,password,fullname,mobile,district} = req.body
+    const{email,password,fullname,mobile,district,upazilla,userType} = req.body
 
     if(!email || !password || !fullname || !mobile) {
         return res.status(400).json({success:false,message: "Provide all required fields"})
@@ -56,6 +56,8 @@ export async function signUp(req,res) {
             mobile: mobile,
             password: hashedPassword,
             district: userDistrict,
+            upazilla: upazilla || '',
+            userType: userType || 'farmer',
             latitude: userLatitude,
             longitude: userLongitude
         })
@@ -66,7 +68,10 @@ export async function signUp(req,res) {
                 _id:newUser._id,
                 fullname:newUser.fullname,
                 email:newUser.email,
+                mobile:newUser.mobile,
                 district:newUser.district,
+                upazilla:newUser.upazilla,
+                userType:newUser.userType,
                 latitude:newUser.latitude,
                 longitude:newUser.longitude
             },message:"User created successfully"
@@ -114,7 +119,10 @@ export async function logIn(req,res) {
             _id: currUser._id,
             fullname:currUser.fullname,
             email: currUser.email,
+            mobile: currUser.mobile,
             district: currUser.district,
+            upazilla: currUser.upazilla,
+            userType: currUser.userType,
             latitude: currUser.latitude,
             longitude: currUser.longitude
         },message: "login successfull"

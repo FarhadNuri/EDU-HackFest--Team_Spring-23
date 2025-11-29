@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 // API Configuration
-// Use relative URLs for production, localhost for development
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = isDevelopment ? 'http://localhost:5000/api' : '/api';
+// Use environment variable or fallback to relative URLs for production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -106,6 +105,24 @@ export const langAPI = {
 export const districtsAPI = {
   searchDistricts: (query) => api.get(`/districts/search?query=${encodeURIComponent(query)}`),
   getAllDistricts: () => api.get('/districts/all'),
+};
+
+// Buyer API calls
+export const buyerAPI = {
+  searchFarmers: (params) => api.get('/buyer/farmers/search', { params }),
+  getFarmerDetails: (farmerId) => api.get(`/buyer/farmers/${farmerId}`),
+  getBuyerProfile: () => api.get('/buyer/profile'),
+};
+
+// Risk Map API calls
+export const riskMapAPI = {
+  getMockData: (params) => api.get('/riskmap/mock-data', { params }),
+};
+
+// Alert API calls
+export const alertAPI = {
+  generateAlerts: () => api.get('/alerts/generate'),
+  generateCropAlert: (cropId) => api.get(`/alerts/crop/${cropId}`),
 };
 
 // Utility function to handle API errors

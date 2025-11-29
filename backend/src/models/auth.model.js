@@ -29,6 +29,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    upazilla: {
+        type: String,
+        default: ''
+    },
+    userType: {
+        type: String,
+        enum: ['farmer', 'buyer'],
+        default: 'farmer'
+    },
     latitude: {
         type: Number,
         required: true

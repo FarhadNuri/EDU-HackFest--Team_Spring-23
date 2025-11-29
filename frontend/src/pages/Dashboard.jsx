@@ -5,8 +5,14 @@ import Alerts from '../components/Alerts'
 import Analytics from '../components/Analytics'
 import CropDetails from '../components/CropDetails'
 import Weather from '../components/Weather'
+import RiskMap from '../components/RiskMap'
+import SmartAlerts from '../components/SmartAlerts'
+import AlertTester from '../components/AlertTester'
+import PestIdentification from '../components/PestIdentification'
+import BuyerDashboard from '../components/BuyerDashboard'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuthContext } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { profileAPI, cropAPI, predictionAPI } from '../services/api'
 import { useOfflineSync } from '../hooks/useOfflineSync'
 
@@ -16,6 +22,10 @@ const Dashboard = ({ onLogout }) => {
   const [showAlerts, setShowAlerts] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showWeather, setShowWeather] = useState(false)
+  const [showRiskMap, setShowRiskMap] = useState(false)
+  const [showSmartAlerts, setShowSmartAlerts] = useState(false)
+  const [showAlertTester, setShowAlertTester] = useState(false)
+  const [showPestId, setShowPestId] = useState(false)
   const [selectedCrop, setSelectedCrop] = useState(null)
   const [crops, setCrops] = useState([])
   const [cropCount, setCropCount] = useState(0)
@@ -25,6 +35,13 @@ const Dashboard = ({ onLogout }) => {
   const { language, toggleLanguage, t } = useLanguage()
   const { user, logout } = useAuthContext()
   const { isSyncing, pendingCount, syncOfflineData } = useOfflineSync()
+  
+  // Show buyer dashboard if user is a buyer
+  if (user?.userType === 'buyer') {
+    return <BuyerDashboard />
+  }
+
+  // Note: Real-time alert streaming removed - use Smart Alerts button instead
 
   // Fetch user crops and count
   const fetchDashboardData = async () => {
@@ -308,6 +325,67 @@ const Dashboard = ({ onLogout }) => {
                 <p className="text-xs text-gray-600">{t('5-day local weather', '৫ দিনের স্থানীয় আবহাওয়া')}</p>
               </div>
             </button>
+
+            <button
+              onClick={() => setShowRiskMap(true)}
+              className="flex items-center space-x-3 p-4 border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 rounded-lg transition group"
+            >
+              <div className="w-12 h-12 bg-purple-100 group-hover:bg-purple-200 rounded-lg flex items-center justify-center transition">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">{t('Risk Map', 'ঝুঁকি মানচিত্র')}</p>
+                <p className="text-xs text-gray-600">{t('Local farm risks', 'স্থানীয় খামার ঝুঁকি')}</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setShowSmartAlerts(true)}
+              className="flex items-center space-x-3 p-4 border-2 border-red-200 hover:border-red-400 hover:bg-red-50 rounded-lg transition group"
+            >
+              <div className="w-12 h-12 bg-red-100 group-hover:bg-red-200 rounded-lg flex items-center justify-center transition">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">{t('Smart Alerts', 'স্মার্ট সতর্কতা')}</p>
+                <p className="text-xs text-gray-600">{t('AI Advice', 'এআই পরামর্শ')}</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setShowAlertTester(true)}
+              className="flex items-center space-x-3 p-4 border-2 border-pink-200 hover:border-pink-400 hover:bg-pink-50 rounded-lg transition group"
+            >
+              <div className="w-12 h-12 bg-pink-100 group-hover:bg-pink-200 rounded-lg flex items-center justify-center transition">
+                <svg className="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">{t('Test Alerts', 'টেস্ট সতর্কতা')}</p>
+                <p className="text-xs text-gray-600">{t('Custom Test', 'কাস্টম টেস্ট')}</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setShowPestId(true)}
+              className="flex items-center space-x-3 p-4 border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-lg transition group"
+            >
+              <div className="w-12 h-12 bg-emerald-100 group-hover:bg-emerald-200 rounded-lg flex items-center justify-center transition">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">{t('Pest ID', 'কীটপতঙ্গ শনাক্ত')}</p>
+                <p className="text-xs text-gray-600">{t('AI Vision', 'এআই ভিশন')}</p>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -361,6 +439,29 @@ const Dashboard = ({ onLogout }) => {
       {showAlerts && <Alerts onClose={() => { setShowAlerts(false); fetchDashboardData(); }} onCropSelect={(crop) => { setSelectedCrop(crop); setShowAlerts(false); }} />}
       {showAnalytics && <Analytics onClose={() => setShowAnalytics(false)} />}
       {showWeather && <Weather onClose={() => setShowWeather(false)} />}
+      {showRiskMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">{t('Local Risk Map', 'স্থানীয় ঝুঁকি মানচিত্র')}</h2>
+              <button
+                onClick={() => setShowRiskMap(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <RiskMap />
+            </div>
+          </div>
+        </div>
+      )}
+      {showSmartAlerts && <SmartAlerts onClose={() => setShowSmartAlerts(false)} />}
+      {showAlertTester && <AlertTester onClose={() => setShowAlertTester(false)} />}
+      {showPestId && <PestIdentification onClose={() => setShowPestId(false)} />}
       {selectedCrop && <CropDetails crop={selectedCrop} onClose={() => setSelectedCrop(null)} />}
     </div>
   )

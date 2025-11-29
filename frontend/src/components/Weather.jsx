@@ -202,9 +202,9 @@ const Weather = ({ onClose }) => {
 
   const fetchAllUpazilas = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather/districts`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/weather/districts`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
       if (response.ok) {
@@ -221,9 +221,9 @@ const Weather = ({ onClose }) => {
   const fetchOtherUpazilaWeather = async (upazilaName) => {
     try {
       setOtherUpazilaLoading(true)
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/weather?district=${encodeURIComponent(upazilaName)}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/weather?district=${encodeURIComponent(upazilaName)}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       })
       

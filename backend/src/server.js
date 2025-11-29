@@ -14,6 +14,11 @@ import syncRoutes from "./routes/sync.route.js"
 import weatherRoutes from "./routes/weather.route.js"
 import predictionRoutes from "./routes/prediction.route.js"
 import districtRoutes from "./routes/district.route.js"
+import buyerRoutes from "./routes/buyer.route.js"
+import riskmapRoutes from "./routes/riskmap.route.js"
+import alertRoutes from "./routes/alert.route.js"
+import pestRoutes from "./routes/pest.route.js"
+
 dotenv.config()
 
 const app = express()
@@ -29,8 +34,10 @@ const frontendDistPath = isProduction
 
 // CORS configuration - allow frontend to access backend
 const allowedOrigins = [
-  'http://localhost:5173', 
+  'http://localhost:5173',
+  'http://localhost:5174',
   'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
   process.env.FRONTEND_URL || ''
 ].filter(Boolean)
 
@@ -39,9 +46,12 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true)
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'production') {
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else if (process.env.NODE_ENV === 'production') {
       callback(null, true)
     } else {
+      console.log('CORS blocked origin:', origin)
       callback(new Error('Not allowed by CORS'))
     }
   },
@@ -50,7 +60,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
-app.use(express.json())
+// Increase payload size limit for image uploads
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 app.use(cookieParser())
 app.use(langMiddleware)
 app.use("/api/lang",langRoutes)
@@ -62,6 +74,17 @@ app.use("/api/sync",syncRoutes)
 app.use("/api/weather",weatherRoutes)
 app.use("/api/prediction",predictionRoutes)
 app.use("/api/districts",districtRoutes)
+app.use("/api/buyer",buyerRoutes)
+app.use("/api/riskmap",riskmapRoutes)
+app.use("/api/alerts",alertRoutes)
+app.use("/api/pest",pestRoutes)
+
+// Serve alert listener HTML in development
+if (!isProduction) {
+    app.get('/alert-listener.html', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/public/alert-listener.html'))
+    })
+}
 
 if (isProduction) {
     app.use(express.static(frontendDistPath))

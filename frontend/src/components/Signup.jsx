@@ -11,6 +11,7 @@ const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
     password: '',
     confirmPassword: '',
     district: '',
+    upazilla: '',
     userType: 'farmer',
     agreeToTerms: false
   })
@@ -20,8 +21,13 @@ const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
   const [districtSuggestions, setDistrictSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+  const [upazillaSuggestions, setUpazillaSuggestions] = useState([])
+  const [showUpazillaSuggestions, setShowUpazillaSuggestions] = useState(false)
+  const [isSearchingUpazilla, setIsSearchingUpazilla] = useState(false)
   const districtInputRef = useRef(null)
   const suggestionsRef = useRef(null)
+  const upazillaInputRef = useRef(null)
+  const upazillaSuggestionsRef = useRef(null)
 
   const { register } = useAuthContext()
   const { showSuccess, showError } = useToast()
@@ -35,6 +41,13 @@ const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
         !districtInputRef.current.contains(event.target)
       ) {
         setShowSuggestions(false)
+      }
+      if (
+        upazillaSuggestionsRef.current && 
+        !upazillaSuggestionsRef.current.contains(event.target) &&
+        !upazillaInputRef.current.contains(event.target)
+      ) {
+        setShowUpazillaSuggestions(false)
       }
     }
 
@@ -173,6 +186,40 @@ const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
     setFormData(prev => ({ ...prev, district: district.nameEn }))
     setShowSuggestions(false)
     setDistrictSuggestions([])
+  }
+
+  // Handle upazilla input with search
+  const handleUpazillaChange = async (e) => {
+    const value = e.target.value
+    setFormData(prev => ({ ...prev, upazilla: value }))
+    
+    if (value.length < 2) {
+      setUpazillaSuggestions([])
+      setShowUpazillaSuggestions(false)
+      return
+    }
+
+    setIsSearchingUpazilla(true)
+    setShowUpazillaSuggestions(true)
+
+    try {
+      const response = await districtsAPI.searchDistricts(value)
+      if (response.data.success) {
+        setUpazillaSuggestions(response.data.districts)
+      }
+    } catch (error) {
+      console.error('Error searching upazilla:', error)
+      setUpazillaSuggestions([])
+    } finally {
+      setIsSearchingUpazilla(false)
+    }
+  }
+
+  // Handle selecting an upazilla suggestion
+  const handleSelectUpazilla = (district) => {
+    setFormData(prev => ({ ...prev, upazilla: district.nameEn }))
+    setShowUpazillaSuggestions(false)
+    setUpazillaSuggestions([])
   }
 
   return (
@@ -352,6 +399,52 @@ const Signup = ({ onClose, onSwitchToLogin, onSuccess }) => {
             
             {validationErrors.district && (
               <p className="mt-1 text-xs text-red-600">{validationErrors.district}</p>
+            )}
+          </div>
+
+          {/* Upazilla */}
+          <div className="relative">
+            <label htmlFor="upazilla" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+              Upazilla (Optional) / উপজেলা (ঐচ্ছিক)
+            </label>
+            <div className="relative">
+              <input
+                ref={upazillaInputRef}
+                type="text"
+                id="upazilla"
+                name="upazilla"
+                value={formData.upazilla}
+                onChange={handleUpazillaChange}
+                onFocus={() => formData.upazilla.length >= 2 && setShowUpazillaSuggestions(true)}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-600 focus:border-transparent transition"
+                placeholder="Start typing... (e.g., Dhaka, Rajshahi)"
+                autoComplete="off"
+              />
+              {isSearchingUpazilla && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Suggestions Dropdown */}
+            {showUpazillaSuggestions && upazillaSuggestions.length > 0 && (
+              <div 
+                ref={upazillaSuggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+              >
+                {upazillaSuggestions.map((district, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSelectUpazilla(district)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-lime-50 focus:bg-lime-50 focus:outline-none transition flex justify-between items-center border-b border-gray-100 last:border-b-0"
+                  >
+                    <span className="text-sm font-medium text-gray-900">{district.nameEn}</span>
+                    <span className="text-sm text-gray-500">{district.nameBn}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
