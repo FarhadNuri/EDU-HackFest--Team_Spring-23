@@ -52,14 +52,14 @@ function AppContent() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-grow">
-        {currentPage === 'about' ? (
+        {isAuthenticated && currentPage === 'dashboard' ? (
+          <Dashboard onLogout={handleLogout} />
+        ) : currentPage === 'about' ? (
           <AboutUs onNavigate={navigateTo} />
         ) : currentPage === 'features' ? (
           <Features onNavigate={navigateTo} />
         ) : currentPage === 'contact' ? (
           <Contact onNavigate={navigateTo} />
-        ) : isAuthenticated ? (
-          <Dashboard onLogout={handleLogout} />
         ) : (
           <Homepage
             onLoginClick={() => setShowLogin(true)}
