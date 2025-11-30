@@ -1,54 +1,110 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Dashboard from './pages/Dashboard'
 import Homepage from './pages/Homepage'
+import AboutUs from './pages/AboutUs'
+import Features from './pages/Features'
+import Contact from './pages/Contact'
+import Footer from './components/Footer'
+import Login from './components/Login'
+import Signup from './components/Signup'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider, useAuthContext } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 
-// Inner App component that uses auth context
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuthContext()
-  const [showHomepage, setShowHomepage] = useState(false)
+  const { isAuthenticated, logout } = useAuthContext()
+  const [currentPage, setCurrentPage] = useState('homepage')
+  const [showLogin, setShowLogin] = useState(false)
+  const [showSignup, setShowSignup] = useState(false)
 
-  // Show loading spinner while checking auth
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
+  // Check authentication status on mount and redirect to dashboard if logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      setCurrentPage('dashboard')
+    }
+  }, [isAuthenticated])
+
+  const handleLogout = () => {
+    logout()
+    setCurrentPage('homepage')
   }
 
   const handleLoginSuccess = () => {
-    setShowHomepage(false)
+    setCurrentPage('dashboard')
+    setShowLogin(false)
   }
 
+  const handleSignupSuccess = () => {
+    setCurrentPage('dashboard')
+    setShowSignup(false)
+  }
+
+  const navigateTo = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   return (
-    <>
-      {isAuthenticated && !showHomepage ? (
-        <Dashboard />
-      ) : (
-        <Homepage 
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-grow">
+        {currentPage === 'about' ? (
+          <AboutUs onNavigate={navigateTo} />
+        ) : currentPage === 'features' ? (
+          <Features onNavigate={navigateTo} />
+        ) : currentPage === 'contact' ? (
+          <Contact onNavigate={navigateTo} />
+        ) : isAuthenticated ? (
+          <Dashboard onLogout={handleLogout} />
+        ) : (
+          <Homepage
+            onLoginClick={() => setShowLogin(true)}
+            onSignupClick={() => setShowSignup(true)}
+            onNavigate={navigateTo}
+          />
+        )}
+      </div>
+      <Footer onNavigate={navigateTo} />
+
+      {/* Login Modal */}
+      {showLogin && (
+        <Login
+          onClose={() => setShowLogin(false)}
+          onSwitchToSignup={() => {
+            setShowLogin(false)
+            setShowSignup(true)
+          }}
           onLoginSuccess={handleLoginSuccess}
-          onShowDashboard={() => setShowHomepage(false)}
         />
       )}
-    </>
+
+      {/* Signup Modal */}
+      {showSignup && (
+        <Signup
+          onClose={() => setShowSignup(false)}
+          onSwitchToLogin={() => {
+            setShowSignup(false)
+            setShowLogin(true)
+          }}
+          onSignupSuccess={handleSignupSuccess}
+        />
+      )}
+    </div>
   )
 }
 
-// Main App component with providers
 function App() {
   return (
     <AuthProvider>
-      <LanguageProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <LanguageProvider>
           <AppContent />
-        </ToastProvider>
-      </LanguageProvider>
+        </LanguageProvider>
+      </ToastProvider>
     </AuthProvider>
   )
 }

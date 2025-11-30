@@ -8,8 +8,10 @@ import Weather from '../components/Weather'
 import RiskMap from '../components/RiskMap'
 import SmartAlerts from '../components/SmartAlerts'
 import AlertTester from '../components/AlertTester'
-import PestIdentification from '../components/PestIdentification'
+
 import BuyerDashboard from '../components/BuyerDashboard'
+import RecentSales from '../components/RecentSales'
+import VoiceAssistant from '../components/VoiceAssistant'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuthContext } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -26,16 +28,53 @@ const Dashboard = ({ onLogout }) => {
   const [showSmartAlerts, setShowSmartAlerts] = useState(false)
   const [showAlertTester, setShowAlertTester] = useState(false)
   const [showPestId, setShowPestId] = useState(false)
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false)
   const [selectedCrop, setSelectedCrop] = useState(null)
   const [crops, setCrops] = useState([])
   const [cropCount, setCropCount] = useState(0)
   const [activeAlerts, setActiveAlerts] = useState(0)
   const [totalWeight, setTotalWeight] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('crops')
+  const [showAllCrops, setShowAllCrops] = useState(false)
   const { language, toggleLanguage, t } = useLanguage()
   const { user, logout } = useAuthContext()
   const { isSyncing, pendingCount, syncOfflineData } = useOfflineSync()
-  
+
+  // Translation maps for crop types and storage types
+  const cropTypeTranslations = {
+    'Rice': 'ধান',
+    'Paddy': 'ধান',
+    'Wheat': 'গম',
+    'Corn': 'ভুট্টা',
+    'Potato': 'আলু',
+    'Vegetables': 'সবজি',
+    'Fruits': 'ফল',
+    'Maize': 'ভুট্টা'
+  }
+
+  const storageTypeTranslations = {
+    'Warehouse': 'গুদাম',
+    'Open Area': 'খোলা জায়গা',
+    'Jute Bag Stack': 'পাটের বস্তার স্তূপ',
+    'Cold Storage': 'হিমাগার',
+    'Silo': 'সাইলো'
+  }
+
+  const translateCropType = (type) => {
+    if (language === 'bn' && cropTypeTranslations[type]) {
+      return cropTypeTranslations[type]
+    }
+    return type
+  }
+
+  const translateStorageType = (type) => {
+    if (language === 'bn' && storageTypeTranslations[type]) {
+      return storageTypeTranslations[type]
+    }
+    return type
+  }
+
   // Show buyer dashboard if user is a buyer
   if (user?.userType === 'buyer') {
     return <BuyerDashboard />
@@ -52,11 +91,11 @@ const Dashboard = ({ onLogout }) => {
         cropAPI.getCropCount(),
         predictionAPI.getAllPredictions().catch(() => ({ data: { success: false } }))
       ])
-      
+
       if (cropsResponse.data.success) {
         const cropsData = cropsResponse.data.crops || []
         setCrops(cropsData)
-        
+
         // Calculate total weight from all crops
         const weight = cropsData.reduce((sum, crop) => {
           const w = parseFloat(crop.weight) || 0
@@ -64,25 +103,25 @@ const Dashboard = ({ onLogout }) => {
         }, 0)
         setTotalWeight(weight)
       }
-      
+
       if (countResponse.data.success) {
         setCropCount(countResponse.data.count || 0)
       }
-      
+
       if (predictionsResponse.data.success) {
         const predictions = predictionsResponse.data.predictions || []
-        
+
         // Get reviewed alerts from localStorage
         const reviewedAlertsData = localStorage.getItem('reviewedAlerts')
         const reviewedAlerts = reviewedAlertsData ? new Set(JSON.parse(reviewedAlertsData)) : new Set()
-        
+
         // Filter out reviewed alerts and count only high/medium/critical risk that aren't reviewed
         const highRiskCount = predictions.filter(p => {
           const isHighRisk = p.riskLevel === 'Critical' || p.riskLevel === 'High' || p.riskLevel === 'Medium'
           const isNotReviewed = !reviewedAlerts.has(p.crop.id)
           return isHighRisk && isNotReviewed
         }).length
-        
+
         setActiveAlerts(highRiskCount)
       }
     } catch (error) {
@@ -167,7 +206,7 @@ const Dashboard = ({ onLogout }) => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm transition-colors duration-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-600 text-sm">{t('Total Crops', 'মোট ফসল')}</span>
               <div className="w-10 h-10 bg-lime-100 rounded-lg flex items-center justify-center">
@@ -303,7 +342,7 @@ const Dashboard = ({ onLogout }) => {
               <div className="text-left">
                 <p className="font-semibold text-gray-900">{t('View Alerts', 'সতর্কতা দেখুন')}</p>
                 <p className="text-xs text-gray-600">
-                  {activeAlerts > 0 
+                  {activeAlerts > 0
                     ? t(`${activeAlerts} pending alerts`, `${activeAlerts}টি মুলতুবি সতর্কতা`)
                     : t('No active alerts', 'কোন সক্রিয় সতর্কতা নেই')
                   }
@@ -386,50 +425,190 @@ const Dashboard = ({ onLogout }) => {
                 <p className="text-xs text-gray-600">{t('AI Vision', 'এআই ভিশন')}</p>
               </div>
             </button>
+
+            <button
+              onClick={() => setShowVoiceAssistant(true)}
+              className="flex items-center space-x-3 p-4 border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg transition group"
+            >
+              <div className="w-12 h-12 bg-indigo-100 group-hover:bg-indigo-200 rounded-lg flex items-center justify-center transition">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">{t('Voice Assistant', 'ভয়েস সহায়ক')}</p>
+                <p className="text-xs text-gray-600">{t('Ask in Bangla', 'বাংলায় জিজ্ঞাসা করুন')}</p>
+              </div>
+            </button>
           </div>
         </div>
 
-        {/* Recent Crops */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">{t('Recent Crops', 'সাম্প্রতিক ফসল')}</h2>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-8 h-8 border-4 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
+        {/* Tabbed Section: Recent Crops & Sales */}
+        <div className="bg-white rounded-xl shadow-sm">
+          {/* Tabs */}
+          <div className="border-b border-gray-200">
+            <div className="flex">
+              <button
+                onClick={() => setActiveTab('crops')}
+                className={`flex-1 px-6 py-4 text-center font-semibold transition ${activeTab === 'crops'
+                    ? 'text-lime-600 border-b-2 border-lime-600 bg-lime-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  } ${language === 'bn' ? 'font-bengali' : ''}`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C11.5 2 11 2.19 10.59 2.59C10.2 3 10 3.5 10 4C10 4.5 10.2 5 10.59 5.41C11 5.81 11.5 6 12 6C12.5 6 13 5.81 13.41 5.41C13.81 5 14 4.5 14 4C14 3.5 13.81 3 13.41 2.59C13 2.19 12.5 2 12 2M12 7C10.9 7 10 7.9 10 9C10 9.79 10.5 10.47 11.21 10.82C9.89 11.46 9 12.86 9 14.5C9 15.14 9.12 15.75 9.34 16.31C8.5 15.5 8 14.3 8 13C8 10.79 9.79 9 12 9C14.21 9 16 10.79 16 13C16 14.3 15.5 15.5 14.66 16.31C14.88 15.75 15 15.14 15 14.5C15 12.86 14.11 11.46 12.79 10.82C13.5 10.47 14 9.79 14 9C14 7.9 13.1 7 12 7M12 11C10.62 11 9.5 12.12 9.5 13.5C9.5 14.88 10.62 16 12 16C13.38 16 14.5 14.88 14.5 13.5C14.5 12.12 13.38 11 12 11M7 14C5.9 14 5 14.9 5 16C5 17.1 5.9 18 7 18C8.1 18 9 17.1 9 16C9 14.9 8.1 14 7 14M17 14C15.9 14 15 14.9 15 16C15 17.1 15.9 18 17 18C18.1 18 19 17.1 19 16C19 14.9 18.1 14 17 14M7 19C5.34 19 4 20.34 4 22H10C10 20.34 8.66 19 7 19M17 19C15.34 19 14 20.34 14 22H20C20 20.34 18.66 19 17 19Z" />
+                  </svg>
+                  <span>{t('Recent Crops', 'সাম্প্রতিক ফসল')}</span>
+                  {crops.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-lime-100 text-lime-700 text-xs rounded-full font-bold">
+                      {crops.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('sales')}
+                className={`flex-1 px-6 py-4 text-center font-semibold transition ${activeTab === 'sales'
+                    ? 'text-lime-600 border-b-2 border-lime-600 bg-lime-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  } ${language === 'bn' ? 'font-bengali' : ''}`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>{t('Recent Sales', 'সাম্প্রতিক বিক্রয়')}</span>
+                </div>
+              </button>
             </div>
-          ) : crops.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <p className="font-medium">{t('No crops registered yet', 'এখনও কোন ফসল নিবন্ধিত নেই')}</p>
-              <p className="text-sm mt-1">{t('Click "Register New Crop" to get started', 'শুরু করতে "নতুন ফসল নিবন্ধন" ক্লিক করুন')}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {crops.slice(0, 5).map((crop) => (
-                <button
-                  key={crop._id}
-                  onClick={() => setSelectedCrop(crop)}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-lime-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-lime-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <p className="font-semibold text-gray-900">{crop.cropType}</p>
-                      <p className="text-sm text-gray-600">{crop.weight} • {crop.storageType}</p>
-                    </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-6">
+            {activeTab === 'crops' && (
+              <div>
+                <h2 className={`text-xl font-bold text-gray-900 mb-4 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                  {t('Recent Crops', 'সাম্প্রতিক ফসল')}
+                </h2>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-lime-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                    {crop.storageLocation}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+                ) : crops.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="font-medium">{t('No crops registered yet', 'এখনও কোন ফসল নিবন্ধিত নেই')}</p>
+                    <p className="text-sm mt-1">{t('Click "Register New Crop" to get started', 'শুরু করতে "নতুন ফসল নিবন্ধন" ক্লিক করুন')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(showAllCrops ? crops : crops.slice(0, 3)).map((crop) => {
+                      const harvestDate = crop.harvestDate ? new Date(crop.harvestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'
+
+                      return (
+                        <button
+                          key={crop._id}
+                          onClick={() => setSelectedCrop(crop)}
+                          className="w-full p-4 bg-gradient-to-r from-gray-50 to-lime-50 rounded-xl hover:from-gray-100 hover:to-lime-100 transition-all border border-gray-200 hover:border-lime-300 hover:shadow-md"
+                        >
+                          <div className="flex items-start space-x-4">
+                            {/* Icon */}
+                            <div className="w-14 h-14 bg-lime-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <svg className="w-7 h-7 text-lime-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C11.5 2 11 2.19 10.59 2.59C10.2 3 10 3.5 10 4C10 4.5 10.2 5 10.59 5.41C11 5.81 11.5 6 12 6C12.5 6 13 5.81 13.41 5.41C13.81 5 14 4.5 14 4C14 3.5 13.81 3 13.41 2.59C13 2.19 12.5 2 12 2M12 7C10.9 7 10 7.9 10 9C10 9.79 10.5 10.47 11.21 10.82C9.89 11.46 9 12.86 9 14.5C9 15.14 9.12 15.75 9.34 16.31C8.5 15.5 8 14.3 8 13C8 10.79 9.79 9 12 9C14.21 9 16 10.79 16 13C16 14.3 15.5 15.5 14.66 16.31C14.88 15.75 15 15.14 15 14.5C15 12.86 14.11 11.46 12.79 10.82C13.5 10.47 14 9.79 14 9C14 7.9 13.1 7 12 7M12 11C10.62 11 9.5 12.12 9.5 13.5C9.5 14.88 10.62 16 12 16C13.38 16 14.5 14.88 14.5 13.5C14.5 12.12 13.38 11 12 11M7 14C5.9 14 5 14.9 5 16C5 17.1 5.9 18 7 18C8.1 18 9 17.1 9 16C9 14.9 8.1 14 7 14M17 14C15.9 14 15 14.9 15 16C15 17.1 15.9 18 17 18C18.1 18 19 17.1 19 16C19 14.9 18.1 14 17 14M7 19C5.34 19 4 20.34 4 22H10C10 20.34 8.66 19 7 19M17 19C15.34 19 14 20.34 14 22H20C20 20.34 18.66 19 17 19Z" />
+                              </svg>
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 text-left">
+                              {/* Crop Name */}
+                              <h3 className={`text-lg font-bold text-gray-900 mb-2 ${language === 'bn' ? 'font-bengali' : ''}`}>
+                                {translateCropType(crop.cropType)}
+                              </h3>
+
+                              {/* Details Grid */}
+                              <div className="grid grid-cols-3 gap-3">
+                                {/* Quantity */}
+                                <div className="flex items-center space-x-1.5">
+                                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                  </svg>
+                                  <div>
+                                    <p className={`text-xs text-gray-500 ${language === 'bn' ? 'font-bengali' : ''}`}>{t('Quantity', 'পরিমাণ')}</p>
+                                    <p className="text-sm font-semibold text-gray-900">{crop.weight} {language === 'bn' ? 'কেজি' : 'kg'}</p>
+                                  </div>
+                                </div>
+
+                                {/* Storage Type */}
+                                <div className="flex items-center space-x-1.5">
+                                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                  </svg>
+                                  <div>
+                                    <p className={`text-xs text-gray-500 ${language === 'bn' ? 'font-bengali' : ''}`}>{t('Storage', 'সংরক্ষণ')}</p>
+                                    <p className={`text-sm font-semibold text-gray-900 ${language === 'bn' ? 'font-bengali' : ''}`}>{translateStorageType(crop.storageType)}</p>
+                                  </div>
+                                </div>
+
+                                {/* Harvest Date */}
+                                <div className="flex items-center space-x-1.5">
+                                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <div>
+                                    <p className={`text-xs text-gray-500 ${language === 'bn' ? 'font-bengali' : ''}`}>{t('Harvest', 'ফসল কাটা')}</p>
+                                    <p className="text-sm font-semibold text-gray-900">{harvestDate}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Arrow Icon */}
+                            <div className="flex-shrink-0">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* View All/Show Less Button */}
+                {crops.length > 3 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setShowAllCrops(!showAllCrops)}
+                      className={`inline-flex items-center space-x-2 text-lime-600 hover:text-lime-700 font-semibold text-sm transition ${language === 'bn' ? 'font-bengali' : ''}`}
+                    >
+                      <span>
+                        {showAllCrops
+                          ? t('Show Less', 'কম দেখুন')
+                          : `${t('View All', 'সব দেখুন')} (${crops.length})`}
+                      </span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showAllCrops ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'sales' && (
+              <RecentSales />
+            )}
+          </div>
         </div>
       </main>
 
@@ -462,6 +641,7 @@ const Dashboard = ({ onLogout }) => {
       {showSmartAlerts && <SmartAlerts onClose={() => setShowSmartAlerts(false)} />}
       {showAlertTester && <AlertTester onClose={() => setShowAlertTester(false)} />}
       {showPestId && <PestIdentification onClose={() => setShowPestId(false)} />}
+      {showVoiceAssistant && <VoiceAssistant onClose={() => setShowVoiceAssistant(false)} />}
       {selectedCrop && <CropDetails crop={selectedCrop} onClose={() => setSelectedCrop(null)} />}
     </div>
   )

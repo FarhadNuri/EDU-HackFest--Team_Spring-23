@@ -55,3 +55,80 @@
     transform: scaleX(1);
   }
 }
+
+
+/* Dark Mode Styles */
+@layer base {
+  /* Smooth transitions for theme changes */
+  * {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Dark mode text colors */
+  .dark {
+    color-scheme: dark;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  /* Dark mode for common elements */
+  .dark .bg-white {
+    @apply bg-gray-800;
+  }
+  
+  .dark .bg-gray-50 {
+    @apply bg-gray-900;
+  }
+  
+  .dark .bg-gray-100 {
+    @apply bg-gray-800;
+  }
+  
+  .dark .text-gray-900 {
+    @apply text-gray-100;
+  }
+  
+  .dark .text-gray-800 {
+    @apply text-gray-200;
+  }
+  
+  .dark .text-gray-700 {
+    @apply text-gray-300;
+  }
+  
+  .dark .text-gray-600 {
+    @apply text-gray-400;
+  }
+  
+  .dark .border-gray-200 {
+    @apply border-gray-700;
+  }
+  
+  .dark .border-gray-300 {
+    @apply border-gray-600;
+  }
+  
+  /* Dark mode hover states */
+  .dark .hover\:bg-gray-50:hover {
+    @apply bg-gray-800;
+  }
+  
+  .dark .hover\:bg-gray-100:hover {
+    @apply bg-gray-700;
+  }
+  
+  /* Keep lime colors vibrant in dark mode */
+  .dark .bg-lime-600 {
+    @apply bg-lime-500;
+  }
+  
+  .dark .text-lime-600 {
+    @apply text-lime-400;
+  }
+  
+  .dark .hover\:bg-lime-700:hover {
+    @apply bg-lime-600;
+  }
+}

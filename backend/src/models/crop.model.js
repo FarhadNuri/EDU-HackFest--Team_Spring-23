@@ -14,6 +14,15 @@ const cropSchema = new mongoose.Schema({
         type: String,
         required:true
     },
+    initialWeight: {
+        type: String,
+        required: false
+    },
+    status: {
+        type: String,
+        enum: ["active", "sold"],
+        default: "active"
+    },
     harvestDate: {
         type:Date,
         required:true

@@ -64,6 +64,9 @@ export const cropAPI = {
   deleteCrop: (cropId) => api.delete(`/crop/${cropId}`),
   getCropCount: () => api.get('/crop/count'),
   getAllCrops: () => api.get('/crop/list'),
+  updateCropStatus: (cropId, statusData) => api.post(`/crop/${cropId}/status`, statusData),
+  getCropHistory: (cropId) => api.get(`/crop/${cropId}/history`),
+  getAllSales: () => api.get('/crop/sales'),
 };
 
 // Weather API calls
