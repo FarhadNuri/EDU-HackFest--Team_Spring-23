@@ -29,8 +29,8 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 // Determine correct path to frontend dist
 const frontendDistPath = isProduction 
-  ? path.join(__dirname, '../frontend/dist')  // Railway structure
-  : path.join(__dirname, 'frontend/dist')     // Local structure
+  ? path.join(__dirname, '../../frontend/dist')  // Railway/Production structure
+  : path.join(__dirname, '../../frontend/dist')  // Local structure
 
 // CORS configuration - allow frontend to access backend
 const allowedOrigins = [
@@ -38,6 +38,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
+  'https://jubilant-quietude-production-32bc.up.railway.app',
   process.env.FRONTEND_URL || ''
 ].filter(Boolean)
 

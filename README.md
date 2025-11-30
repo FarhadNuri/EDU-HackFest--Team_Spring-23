@@ -7,9 +7,6 @@
 
 </div>
 
-### Live Demo
-
-[edu-hackfest-teamspring-23-production.up.railway](https://edu-hackfest-teamspring-23-production.up.railway.app/)
 
 ## Acknowledgments
 
@@ -43,6 +40,8 @@ HarvestGuard implements:
 3. **CSV-Based Geocoding** for instant location lookups
 4. **JWT Authentication** with refresh token rotation
 5. **ETCL Algorithm** (Estimated Time to Critical Loss)
+6. **AI-Powered Smart Alerts** using Google Gemini for context-aware crop recommendations
+7. **Interactive Risk Maps** with Leaflet.js for geographic crop risk visualization
 
 ---
 
@@ -370,6 +369,8 @@ Where:
 - **Axios** - HTTP client
 - **Context API** - State management
 - **LocalStorage** - Offline storage
+- **Leaflet.js** - Interactive mapping for risk visualization
+- **Google Gemini AI** - Smart crop alerts and recommendations
 
 
 ---
