@@ -2,7 +2,6 @@ import express from "express"
 import dotenv from "dotenv"
 import cookieParser from "cookie-parser"
 import cors from "cors"
-import path from "path"
 import { connectDB } from "./lib/db.lib.js"
 import langRoutes from "./routes/lang.route.js"
 import authRoutes from "./routes/auth.route.js"
@@ -25,8 +24,6 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT
-
-const __dirname = path.resolve()
 
 app.use(cors({
   origin: process.env.NODE_ENV === "production"
@@ -52,16 +49,6 @@ app.use("/api/riskmap", riskmapRoutes)
 app.use("/api/alerts", alertRoutes)
 app.use("/api/pest", pestRoutes)
 app.use("/api/voice", voiceRoutes)
-
-
-
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")))
-
-  app.get(/^(?!\/api).*/, (req, res) => {
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
-  })
-}
 
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`)
